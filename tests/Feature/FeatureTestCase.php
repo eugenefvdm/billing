@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-use Eugenefvdm\Billing\PayfastServiceProvider;
+use Eugenefvdm\Billing\BillingServiceProvider;
 use Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase;
@@ -56,7 +56,7 @@ abstract class FeatureTestCase extends TestCase
     protected function getPackageProviders($app)
     {
         return [
-            PayFastServiceProvider::class,
+            BillingServiceProvider::class,
             LivewireServiceProvider::class,
         ];
     }

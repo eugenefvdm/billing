@@ -9,7 +9,7 @@ use Eugenefvdm\Billing\Components\Subscriptions;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
-class PayfastServiceProvider extends ServiceProvider
+class BillingServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
@@ -62,3 +62,4 @@ class PayfastServiceProvider extends ServiceProvider
         });
     }
 }
+

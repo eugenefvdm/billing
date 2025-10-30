@@ -31,12 +31,12 @@ php artisan install:api
 
 Publish the config file with:
 ```bash
-php artisan vendor:publish --provider="Eugenefvdm\Payfast\PayfastServiceProvider" --tag="config"
+php artisan vendor:publish --provider="Eugenefvdm\Billing\BillingServiceProvider" --tag="config"
 ```
 
 Publish the Success and Cancelled views and the Livewire components for subscriptions and receipts.
 ```bash
-php artisan vendor:publish --provider="Eugenefvdm\Payfast\PayfastServiceProvider" --tag="views"
+php artisan vendor:publish --provider="Eugenefvdm\Billing\BillingServiceProvider" --tag="views"
 ```
 
 These files are:
