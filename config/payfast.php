@@ -28,13 +28,9 @@ return [
     'billables' => [
         'user' => [
             'model' => User::class,
-
             'trial_days' => 30,
-
             'default_interval' => 'monthly',
-
             'currency_prefix' => 'R ',
-
             'plans' => [
                 [
                     'name' => 'Startup',
