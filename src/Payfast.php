@@ -1,12 +1,12 @@
 <?php
 
-namespace FintechSystems\Payfast;
+namespace Eugenefvdm\Billing;
 
 use Carbon\Carbon;
 use DOMDocument;
 use DOMXPath;
 use Exception;
-use FintechSystems\Payfast\Contracts\BillingProvider;
+use Eugenefvdm\Billing\Contracts\BillingProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;

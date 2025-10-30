@@ -1,6 +1,6 @@
 <?php
 
-namespace FintechSystems\Payfast;
+namespace Eugenefvdm\Billing;
 
 use Carbon\Carbon;
 use Illuminate\Contracts\Support\Arrayable;

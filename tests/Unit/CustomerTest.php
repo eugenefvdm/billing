@@ -2,7 +2,7 @@
 
 uses(\Orchestra\Testbench\TestCase::class);
 use Carbon\Carbon;
-use FintechSystems\Payfast\Customer;
+use Eugenefvdm\Billing\Customer;
 use Tests\Fixtures\User;
 
 test('customer can be put on a generic trial', function () {

@@ -1,6 +1,6 @@
 <?php
 
-namespace FintechSystems\Payfast;
+namespace Eugenefvdm\Billing;
 
 class SubscriptionStatus
 {

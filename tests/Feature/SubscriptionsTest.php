@@ -2,7 +2,7 @@
 
 uses(\Tests\Feature\FeatureTestCase::class);
 use Carbon\Carbon;
-use FintechSystems\PayFast\Subscription;
+use Eugenefvdm\Billing\Subscription;
 
 test('cannot swap while on trial', function () {
     $subscription = new Subscription(['trial_ends_at' => now()->addDay()]);

@@ -1,6 +1,6 @@
 <?php
 
-namespace FintechSystems\Payfast\Facades;
+namespace Eugenefvdm\Billing\Facades;
 
 use Illuminate\Support\Facades\Facade;
 

@@ -1,11 +1,11 @@
 <?php
 
-namespace FintechSystems\Payfast;
+namespace Eugenefvdm\Billing;
 
-use FintechSystems\Payfast\Components\Banner;
-use FintechSystems\Payfast\Components\Billing;
-use FintechSystems\Payfast\Components\Receipts;
-use FintechSystems\Payfast\Components\Subscriptions;
+use Eugenefvdm\Billing\Components\Banner;
+use Eugenefvdm\Billing\Components\Billing;
+use Eugenefvdm\Billing\Components\Receipts;
+use Eugenefvdm\Billing\Components\Subscriptions;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -22,10 +22,6 @@ class PayfastServiceProvider extends ServiceProvider
         ], 'views');
 
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'payfast');
-
-        $this->publishes([
-            __DIR__ . '/../Nova' => app_path('Nova'),
-        ], 'nova-resources');
 
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
 

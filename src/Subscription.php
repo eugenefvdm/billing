@@ -1,14 +1,14 @@
 <?php
 
-namespace FintechSystems\Payfast;
+namespace Eugenefvdm\Billing;
 
 use App\Models\Client;
 use App\Models\User;
 use Carbon\Carbon;
 use DateTimeInterface;
 use Exception;
-use FintechSystems\Payfast\Concerns\Prorates;
-use FintechSystems\Payfast\Facades\Payfast;
+use Eugenefvdm\Billing\Concerns\Prorates;
+use Eugenefvdm\Billing\Facades\Payfast;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Log;
@@ -817,7 +817,7 @@ class Subscription extends Model
      * 2022-11-01T00:00:00+02:00 for use in Payment date() method
      *
      *
-     * @return \FintechSystems\PayFast\Payment|null
+     * @return \Eugenefvdm\PayFast\Payment|null
      */
     public function runDate()
     {

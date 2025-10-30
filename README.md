@@ -13,8 +13,6 @@ Requirements:
 - A [Payfast account](https://www.payfast.co.za/registration)
 - Sanctum
 
-If you want to use Laravel Nova, version 4 is required for the `Subscription` and `Receipt` resources.
-
 ## Installation
 
 Install the package via composer:
@@ -33,12 +31,12 @@ php artisan install:api
 
 Publish the config file with:
 ```bash
-php artisan vendor:publish --provider="FintechSystems\Payfast\PayfastServiceProvider" --tag="config"
+php artisan vendor:publish --provider="Eugenefvdm\Payfast\PayfastServiceProvider" --tag="config"
 ```
 
 Publish the Success and Cancelled views and the Livewire components for subscriptions and receipts.
 ```bash
-php artisan vendor:publish --provider="FintechSystems\Payfast\PayfastServiceProvider" --tag="views"
+php artisan vendor:publish --provider="Eugenefvdm\Payfast\PayfastServiceProvider" --tag="views"
 ```
 
 These files are:
@@ -57,7 +55,7 @@ success.blade.php
 Add the `Billable()` trait to your user model.
 
 ```php
-use FintechSystems\Payfast\Billable;
+use Eugenefvdm\Payfast\Billable;
 
 class User extends Authenticatable
 {
@@ -90,14 +88,6 @@ In your view:
 
 ```php
 @include('payfast::components.pricing')
-```
-
-### Nova Integration
-
-Optionally publish Laravel Nova Subscription and Receipts Resources and Actions
-
-```bash
-php artisan vendor:publish --provider="FintechSystems\Payfast\PayfastServiceProvider" --tag="nova-resources"
 ```
 
 ## Migrations
@@ -248,7 +238,7 @@ Replace `$user->name` with your first name and last name fields.
 - Update a card
 
 ```php
-use FintechSystems\PayFast\Facades\Payfast;
+use Eugenefvdm\PayFast\Facades\Payfast;
 
 Route::get('/payment', function() {
     return Payfast::payment(5,'Order #1');

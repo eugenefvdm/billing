@@ -1,8 +1,8 @@
 <?php
 
-namespace FintechSystems\Payfast\Concerns;
+namespace Eugenefvdm\Billing\Concerns;
 
-use FintechSystems\Payfast\Customer;
+use Eugenefvdm\Billing\Customer;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Collection;
 

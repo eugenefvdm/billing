@@ -1,6 +1,6 @@
 <?php
 
-namespace FintechSystems\Payfast\Components;
+namespace Eugenefvdm\Billing\Components;
 
 use Illuminate\Contracts\View\View;
 use Livewire\Component;

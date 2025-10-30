@@ -1,8 +1,8 @@
 <?php
 
 uses(\Tests\Feature\FeatureTestCase::class);
-use FintechSystems\PayFast\Facades\Payfast;
-use FintechSystems\PayFast\Subscription;
+use Eugenefvdm\Billing\Facades\Payfast;
+use Eugenefvdm\Billing\Subscription;
 use Illuminate\Support\Facades\Http;
 
 it('can fetch a unique payment identifier for a new subscription', function () {

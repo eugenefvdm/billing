@@ -1,6 +1,6 @@
 <?php
 
-namespace FintechSystems\Payfast\Traits;
+namespace Eugenefvdm\Billing\Traits;
 
 use Illuminate\Contracts\Container\BindingResolutionException;
 

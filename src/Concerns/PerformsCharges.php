@@ -1,9 +1,9 @@
 <?php
 
-namespace FintechSystems\Payfast\Concerns;
+namespace Eugenefvdm\Billing\Concerns;
 
 use Exception;
-use FintechSystems\Payfast\Cashier;
+use Eugenefvdm\Billing\Cashier;
 use InvalidArgumentException;
 use LogicException;
 

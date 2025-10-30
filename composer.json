@@ -18,13 +18,13 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "FintechSystems\\Payfast\\": "src/"
+            "Eugenefvdm\\Billing\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
             "Tests\\": "tests/",
-            "FintechSystems\\Payfast\\Tests\\": "tests"
+            "Eugenefvdm\\Billing\\Tests\\": "tests"
         }
     },
     "require": {
@@ -46,11 +46,8 @@
     "extra": {
         "laravel": {
             "providers": [
-                "FintechSystems\\Payfast\\PayfastServiceProvider"
-            ],
-            "aliases": {
-                "payfast": "Payfast"
-            }
+                "Eugenefvdm\\Billing\\PayfastServiceProvider"
+            ]
         }
     },
     "config": {

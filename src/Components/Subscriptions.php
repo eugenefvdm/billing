@@ -1,8 +1,8 @@
 <?php
 
-namespace FintechSystems\PayFast\Components;
+namespace Eugenefvdm\Billing\Components;
 
-use FintechSystems\Payfast\Facades\Payfast;
+use Eugenefvdm\Billing\Facades\Payfast;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;

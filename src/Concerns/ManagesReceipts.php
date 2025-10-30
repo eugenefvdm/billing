@@ -1,8 +1,8 @@
 <?php
 
-namespace FintechSystems\Payfast\Concerns;
+namespace Eugenefvdm\Billing\Concerns;
 
-use FintechSystems\Payfast\Cashier;
+use Eugenefvdm\Billing\Cashier;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait ManagesReceipts

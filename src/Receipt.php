@@ -1,6 +1,6 @@
 <?php
 
-namespace FintechSystems\Payfast;
+namespace Eugenefvdm\Billing;
 
 use Illuminate\Database\Eloquent\Model;
 use Money\Currency;

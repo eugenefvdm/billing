@@ -1,7 +1,7 @@
 <?php
 
 uses(\Tests\Feature\FeatureTestCase::class);
-use FintechSystems\PayFast\Receipt;
+use Eugenefvdm\Billing\Receipt;
 use Money\Currency;
 
 test('it can returns its amount and currency', function () {

@@ -1,6 +1,6 @@
 <?php
 
-namespace FintechSystems\PayFast\Contracts;
+namespace Eugenefvdm\Billing\Contracts;
 
 interface BillingProvider
 {

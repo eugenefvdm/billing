@@ -1,6 +1,6 @@
 <?php
 
-namespace FintechSystems\Payfast;
+namespace Eugenefvdm\Billing;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;

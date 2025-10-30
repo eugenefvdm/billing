@@ -1,11 +1,11 @@
 <?php
 
-namespace FintechSystems\Payfast;
+namespace Eugenefvdm\Billing;
 
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * @property \FintechSystems\Payfast\Billable $billable
+ * @property \Eugenefvdm\Billing\Billable $billable
  */
 class Customer extends Model
 {

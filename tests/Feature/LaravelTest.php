@@ -1,7 +1,7 @@
 <?php
 
 uses(\Tests\Feature\FeatureTestCase::class);
-use FintechSystems\Payfast\Facades\Payfast;
+use Eugenefvdm\Billing\Facades\Payfast;
 
 test('laravel dependency injection works', function () {
     $result = Payfast::di();

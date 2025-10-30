@@ -1,6 +1,6 @@
 <?php
 
-namespace FintechSystems\Payfast\Concerns;
+namespace Eugenefvdm\Billing\Concerns;
 
 trait Prorates
 {

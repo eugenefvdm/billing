@@ -1,8 +1,8 @@
 <?php
 
-namespace FintechSystems\Payfast\Events;
+namespace Eugenefvdm\Billing\Events;
 
-use FintechSystems\Payfast\Subscription;
+use Eugenefvdm\Billing\Subscription;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

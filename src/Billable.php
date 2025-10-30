@@ -1,11 +1,11 @@
 <?php
 
-namespace FintechSystems\Payfast;
+namespace Eugenefvdm\Billing;
 
-use FintechSystems\Payfast\Concerns\ManagesCustomer;
-use FintechSystems\Payfast\Concerns\ManagesReceipts;
-use FintechSystems\Payfast\Concerns\ManagesSubscriptions;
-use FintechSystems\Payfast\Concerns\PerformsCharges;
+use Eugenefvdm\Billing\Concerns\ManagesCustomer;
+use Eugenefvdm\Billing\Concerns\ManagesReceipts;
+use Eugenefvdm\Billing\Concerns\ManagesSubscriptions;
+use Eugenefvdm\Billing\Concerns\PerformsCharges;
 
 trait Billable
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace FintechSystems\Payfast;
+namespace Eugenefvdm\Billing;
 
 use Spatie\Url\Url;
 

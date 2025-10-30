@@ -1,8 +1,8 @@
 <?php
 
-namespace FintechSystems\Payfast;
+namespace Eugenefvdm\Billing;
 
-use FintechSystems\PayFast\Exceptions\PayFastException;
+use Eugenefvdm\Billing\Exceptions\PayFastException;
 use Illuminate\Support\Facades\Http;
 use Money\Currencies\ISOCurrencies;
 use Money\Currency;

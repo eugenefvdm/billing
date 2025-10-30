@@ -1,11 +1,11 @@
 <?php
 
-namespace FintechSystems\Payfast\Concerns;
+namespace Eugenefvdm\Billing\Concerns;
 
 use Carbon\Carbon;
-use FintechSystems\Payfast\Cashier;
-use FintechSystems\Payfast\Subscription;
-use FintechSystems\Payfast\SubscriptionBuilder;
+use Eugenefvdm\Billing\Cashier;
+use Eugenefvdm\Billing\Subscription;
+use Eugenefvdm\Billing\SubscriptionBuilder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait ManagesSubscriptions

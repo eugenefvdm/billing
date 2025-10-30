@@ -1,6 +1,6 @@
 <?php
 
-namespace FintechSystems\PayFast\Exceptions;
+namespace Eugenefvdm\Billing\Exceptions;
 
 use Exception;
 

@@ -1,21 +1,21 @@
 <?php
 
-namespace FintechSystems\Payfast\Http\Controllers;
+namespace Eugenefvdm\Billing\Http\Controllers;
 
 use Exception;
-use FintechSystems\Payfast\Cashier;
-use FintechSystems\Payfast\Events\PaymentSucceeded;
-use FintechSystems\Payfast\Events\SubscriptionCancelled;
-use FintechSystems\Payfast\Events\SubscriptionCreated;
-use FintechSystems\Payfast\Events\SubscriptionPaymentSucceeded;
-use FintechSystems\Payfast\Events\WebhookHandled;
-use FintechSystems\Payfast\Events\WebhookReceived;
-use FintechSystems\Payfast\Exceptions\InvalidMorphModelInPayload;
-use FintechSystems\Payfast\Exceptions\MissingSubscription;
-use FintechSystems\Payfast\Facades\Payfast;
-use FintechSystems\Payfast\Payment;
-use FintechSystems\Payfast\Receipt;
-use FintechSystems\Payfast\Subscription;
+use Eugenefvdm\Billing\Cashier;
+use Eugenefvdm\Billing\Events\PaymentSucceeded;
+use Eugenefvdm\Billing\Events\SubscriptionCancelled;
+use Eugenefvdm\Billing\Events\SubscriptionCreated;
+use Eugenefvdm\Billing\Events\SubscriptionPaymentSucceeded;
+use Eugenefvdm\Billing\Events\WebhookHandled;
+use Eugenefvdm\Billing\Events\WebhookReceived;
+use Eugenefvdm\Billing\Exceptions\InvalidMorphModelInPayload;
+use Eugenefvdm\Billing\Exceptions\MissingSubscription;
+use Eugenefvdm\Billing\Facades\Payfast;
+use Eugenefvdm\Billing\Payment;
+use Eugenefvdm\Billing\Receipt;
+use Eugenefvdm\Billing\Subscription;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
