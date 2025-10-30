@@ -1,0 +1,61 @@
+{
+    "name": "eugenefvdm/billable-subscriptions",
+    "description": "A Laravel service provider and Livewire blades for Payfast and EFT subscription billing",
+    "keywords": [        
+        "laravel",
+        "payfast",
+        "eft",
+        "electronic-funds-transfer",
+        "subscription-billing"
+    ],
+    "authors": [
+        {
+            "name": "Eugene van der Merwe",
+            "email": "eugene@vander.host",
+            "role": "Developer"
+        }
+    ],
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Eugenefvdm\\BillableSubscriptions\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/",
+            "Eugenefvdm\\BillableSubscriptions\\Tests\\": "tests"
+        }
+    },
+    "require": {
+        "php": "^8.3",
+        "symfony/dotenv": "*",
+        "livewire/livewire": "*",
+        "moneyphp/money": "*",
+        "spatie/ray": "*",
+        "nunomaduro/collision": "*",
+        "guzzlehttp/guzzle": "*",
+        "guzzlehttp/psr7": "*"
+    },
+    "require-dev": {          
+        "orchestra/testbench": "9",
+        "spatie/laravel-ray": "*",
+        "pestphp/pest": "^2.36",
+        "pestphp/pest-plugin-drift": "^2.5"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Eugenefvdm\\BillableSubscriptions\\BillableServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/pest"
+    }
+}
