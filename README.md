@@ -33,6 +33,12 @@ Publish the Success and Cancelled views and the Livewire components for subscrip
 php artisan vendor:publish --provider="Eugenefvdm\Billing\BillingServiceProvider" --tag="views"
 ```
 
+Add this to app.css:
+
+```CSS
+@source '../../vendor/eugenefvdm/billing/resources/views/**/*.blade.php';
+```
+
 These files are:
 ```bash
 banner.blade.php

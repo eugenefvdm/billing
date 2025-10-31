@@ -167,26 +167,24 @@
                 {{ __('Are you sure you want to cancel your subscription?') }}                
             </x-slot>
 
-            <x-slot name="footer" class="mt-4">
-                <div class="flex flex-col items-center mb-4">                    
-                    <div class="flex space-x-3 space-y-3">
-                        <x-payfast::secondary-button
-                            wire:click="$toggle('confirmingCancelSubscription')"
-                            wire:loading.attr="disabled">
-                            {{ __('Keep Subscription') }}
-                        </x-payfast::secondary-button>
+            <x-slot name="footer">
+                <div class="flex items-center justify-center gap-3">
+                    <x-payfast::secondary-button
+                        wire:click="$toggle('confirmingCancelSubscription')"
+                        wire:loading.attr="disabled">
+                        {{ __('Keep Subscription') }}
+                    </x-payfast::secondary-button>
 
-                        <x-payfast::secondary-button                    
-                            wire:click="cancelSubscription"
-                            wire:loading.attr="disabled"
-                            class="ml-5">
-                            {{ __('Cancel Subscription') }}
-                        </x-payfast::secondary-button>
+                    <x-payfast::secondary-button                    
+                        wire:click="cancelSubscription"
+                        wire:loading.attr="disabled"
+                        class="!bg-red-600 dark:!bg-red-600 !text-white dark:!text-white hover:!bg-red-700 dark:hover:!bg-red-700 !border-red-600 dark:!border-red-600">
+                        {{ __('Cancel Subscription') }}
+                    </x-payfast::secondary-button>
+                </div>
 
-                        <div wire:loading class="text-center text-gray-600 dark:text-gray-400">
-                        Please wait...
-                        </div>
-                    </div>
+                <div wire:loading class="text-center text-gray-600 dark:text-gray-400 mt-3">
+                    Please wait...
                 </div>
             </x-slot>
 
