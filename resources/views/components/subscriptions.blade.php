@@ -78,7 +78,7 @@
                             ['name'] 
                         }} 
                         {{ 
-                            explode('|', $user->subscription('default')->type)[1] 
+                            ucfirst(explode('|', $user->subscription('default')->type)[1])
                         }} plan.
                     </h3>
                     <div class="mt-3 max-w-xl text-sm text-gray-600 dark:text-gray-400">

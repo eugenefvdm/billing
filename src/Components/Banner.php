@@ -58,7 +58,7 @@ class Banner extends Component
             } else {
                 $message = "You are subscribed to the "
                         . config('billing.billables.user.plans')[explode('|', $user->subscription('default')->type)[0]]['name']
-                        . ' ' . explode('|', $user->subscription('default')->type)[1] . " plan.";
+                        . ' ' . ucfirst(explode('|', $user->subscription('default')->type)[1]) . " plan.";
             }
         }
 

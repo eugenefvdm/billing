@@ -13,21 +13,21 @@
             <table width="100%" class="table-auto">
                 <thead class="bg-gray-50 dark:bg-zinc-700">
                     <tr>
-                        <td nowrap><strong>ID</strong></th>
-                        <td><strong>Item</strong></td>
-                        <td style="text-align:right"><strong>Amount</strong></th>
-                        <td style="padding-left:10px"><strong>Status</strong></th>
-                        <td style="padding-left:10px"><strong>Date</strong></th>
+                        <td class="py-1 px-1" nowrap><strong>ID</strong></th>
+                        <td class="py-1 px-1"><strong>Item</strong></td>
+                        <td class="py-1 px-1 text-right"><strong>Amount</strong></th>
+                        <td class="py-1 px-1"><strong>Status</strong></th>
+                        <td class="py-1 px-1"><strong>Date</strong></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($receipts as $receipt)
                         <tr class="odd:bg-white odd:dark:bg-zinc-800 even:bg-gray-50 even:dark:bg-zinc-700">
-                            <td>{{ $receipt->payfast_payment_id }}</td>
-                            <td>{{ $receipt->item_name }}</td>
-                            <td style="text-align:right">R {{ $receipt->amount_gross }}</td>
-                            <td style="padding-left:10px">{{ $receipt->payment_status }}</td>
-                            <td nowrap>{{ isset($receipt->billing_date) ? $receipt->billing_date->format('Y-m-d') : '' }}</td>
+                            <td class="py-1 px-1">{{ $receipt->payfast_payment_id }}</td>
+                            <td class="py-1 px-1">{{ $receipt->item_name }}</td>
+                            <td class="py-1 px-1 text-right">R {{ $receipt->amount_gross }}</td>
+                            <td class="py-1 px-1">{{ $receipt->payment_status }}</td>
+                            <td class="py-1 px-1 whitespace-nowrap">{{ isset($receipt->billing_date) ? $receipt->billing_date->format('Y-m-d') : '' }}</td>
                         </tr>
                     @endforeach
                 </tbody>

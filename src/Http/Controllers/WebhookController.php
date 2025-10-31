@@ -149,24 +149,25 @@ class WebhookController extends Controller
 
     protected function createSubscription(array $payload)
     {
-        config('billing.payfast.debug') ?? Log::debug("create Subscription in webhook");
+        config('billing.payfast.debug') ?? Log::debug("createSubscription() with payload in webhook");
 
         $customer = $this->findOrCreateCustomer($payload);
 
         $subscription = $customer->subscriptions()->create([
             'name' => 'default',
             'provider_id' => $payload['token'],
-            'type' => $payload['custom_str2'], // Full plan identifier (e.g., '0|monthly')
-            // 'merchant_payment_id' => $payload['m_payment_id'],
+            'type' => $payload['custom_str2'], // Full plan identifier (e.g., '0|monthly')            
             'status' => $payload['payment_status'],
             'next_bill_at' => $payload['billing_date'] ?? null, // This happens when subscription was never created but then cancelled
         ]);
 
         SubscriptionCreated::dispatch($customer, $subscription, $payload);
 
-        ray("Subscription created/reactivated for $customer->email and now applying payment...")->green();
+        config('billing.payfast.debug') ?? Log::debug("Subscription created/reactivated for $customer->email and now applying payment...");
 
         $this->applySubscriptionPayment($payload);
+
+        config('billing.payfast.debug') ?? Log::debug("Subscription payment applied or subscription reactivated for $customer->email");
     }
 
     /**
@@ -270,14 +271,27 @@ class WebhookController extends Controller
     }
 
     /**
-     * Get the subscription name from the type (e.g., 'monthly', 'yearly').
-     * This is only invoked during the hook and not when creating a payment subscription for the first time.
+     * Get the subscription name from the payload's plan identifier.
+     * Parses custom_str2 (e.g., '0|monthly') to reconstruct the same
+     * item_name format used during initial subscription creation.
+     * This is only invoked during webhooks when item_name is null.
      */
     private function getSubscriptionName($payload)
     {
-        $type = $payload['custom_str2']; // 'monthly', 'yearly', etc.
-
-        return ucfirst($type) . ' Subscription';
+        // custom_str2 contains the full plan identifier (e.g., '0|monthly')
+        // We need to parse it to get the plan details
+        list($planId, $frequency) = explode('|', $payload['custom_str2']);
+        
+        $plan = config('billing.billables.user.plans')[$planId];
+        
+        $recurringType = match($frequency) {
+            'monthly' => 'Monthly',
+            'yearly' => 'Yearly',
+            default => ucfirst($frequency)
+        };
+        
+        // Return the same format as used in initial subscription creation
+        return $plan['name'] . " $recurringType";
     }
 
     /**
