@@ -3,28 +3,6 @@
 use App\Models\User;
 
 return [
-    'merchant_id' => env('PAYFAST_MERCHANT_ID'),
-    'merchant_key' => env('PAYFAST_MERCHANT_KEY'),
-    'passphrase' => env('PAYFAST_PASSPHRASE'),
-
-    'test_mode' => env('PAYFAST_TEST_MODE'),
-    'test_mode_callback_url' => env('PAYFAST_TEST_MODE_CALLBACK_URL',config('app.url')),
-
-    'trial_days' => env('PAYFAST_TRIAL_DAYS', 30),
-
-    'merchant_id_test' => env('PAYFAST_MERCHANT_ID_TEST'),
-    'merchant_key_test' => env('PAYFAST_MERCHANT_KEY_TEST'),
-    'passphrase_test' => env('PAYFAST_PASSPHRASE_TEST'),
-
-    'debug' => env('PAYFAST_DEBUG', false),
-
-    'return_url' => env('PAYFAST_RETURN_URL', '/payfast/return'),
-    'cancel_url' => env('PAYFAST_CANCEL_URL', '/payfast/cancel'),
-    'notify_url' => env('PAYFAST_NOTIFY_URL', '/payfast/notify'),
-
-    'callback_url' => env('PAYFAST_CALLBACK_URL', config('app.url')),
-    'callback_url_test' => env('PAYFAST_CALLBACK_URL_TEST', ''),
-
     'billables' => [
         'user' => [
             'model' => User::class,
@@ -54,7 +32,7 @@ return [
                 ],
                 [
                     'name' => 'Business',
-                    'short_description' => "",                    
+                    'short_description' => "",
                     'monthly' => [
                         'setup_amount' => 199000,
                         'recurring_amount' => 199000,
@@ -71,8 +49,34 @@ return [
                     'archived' => false,
                     'cta' => '30 DAY FREE TRIAL',
                     'mostPopular' => true,
-                ],                
+                ],
             ],
         ],
     ],
+
+    'payfast' => [
+
+        'merchant_id' => env('PAYFAST_MERCHANT_ID'),
+        'merchant_key' => env('PAYFAST_MERCHANT_KEY'),
+        'passphrase' => env('PAYFAST_PASSPHRASE'),
+
+        'test_mode' => env('PAYFAST_TEST_MODE'),
+        'test_mode_callback_url' => env('PAYFAST_TEST_MODE_CALLBACK_URL', config('app.url')),
+
+        'trial_days' => env('PAYFAST_TRIAL_DAYS', 30),
+
+        'merchant_id_test' => env('PAYFAST_MERCHANT_ID_TEST'),
+        'merchant_key_test' => env('PAYFAST_MERCHANT_KEY_TEST'),
+        'passphrase_test' => env('PAYFAST_PASSPHRASE_TEST'),
+
+        'debug' => env('PAYFAST_DEBUG', false),
+
+        'return_url' => env('PAYFAST_RETURN_URL', '/payfast/return'),
+        'cancel_url' => env('PAYFAST_CANCEL_URL', '/payfast/cancel'),
+        'notify_url' => env('PAYFAST_NOTIFY_URL', '/payfast/notify'),
+
+        'callback_url' => env('PAYFAST_CALLBACK_URL', config('app.url')),
+        'callback_url_test' => env('PAYFAST_CALLBACK_URL_TEST', ''),
+    ]
+
 ];
