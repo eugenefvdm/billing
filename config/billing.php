@@ -76,10 +76,7 @@ return [
         'debug' => env('PAYFAST_DEBUG', false),
         'return_url' => env('PAYFAST_RETURN_URL', '/payfast/return'),
         'cancel_url' => env('PAYFAST_CANCEL_URL', '/payfast/cancel'),
-        'notify_url' => env('PAYFAST_NOTIFY_URL', '/payfast/notify'),
-        // TODO Deprecate these two lines after first searching if they are in use
-        // 'callback_url' => env('PAYFAST_CALLBACK_URL', config('app.url')),
-        // 'callback_url_test' => env('PAYFAST_CALLBACK_URL_TEST', ''),
+        'notify_url' => env('PAYFAST_NOTIFY_URL', '/payfast/notify'),        
     ]
 
 ];
