@@ -1,17 +1,17 @@
 ## About Payfast Onsite Subscriptions
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/fintech-systems/payfast-onsite-subscriptions) ![Tests](https://github.com/fintech-systems/payfast-onsite-subscriptions/actions/workflows/tests.yml/badge.svg)
- ![GitHub](https://img.shields.io/github/license/fintech-systems/payfast-onsite-subscriptions)
- [![Downloads](https://img.shields.io/packagist/dt/fintechsystems/payfast-onsite-subscriptions.svg)](https://packagist.org/packages/fintechsystems/payfast-onsite-subscriptions)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/eugenefvdm/billing) ![Tests](https://github.com/eugenefvdm/billing/actions/workflows/tests.yml/badge.svg)
+ ![GitHub](https://img.shields.io/github/license/eugenefvdm/billing)
+ [![Downloads](https://img.shields.io/packagist/dt/eugenefvdm/billing.svg)](https://packagist.org/packages/eugenefvdm/billing)
 
-A [Payfast Onsite Payments](https://developers.payfast.co.za/docs#onsite_payments) implementation for Laravel designed to ease subscription billing. [Livewire](https://laravel-livewire.com/) views are included.
+A billing package for Laravel to use for EFT and credit card payment using [Payfast Onsite Payments](https://developers.payfast.co.za/docs#onsite_payments). Includes UI components for [Livewire](https://livewire.laravel.com/).
 
 Requirements:
 
 - PHP 8.3
 - Laravel 11.x or higher
-- A [Payfast Sandbox account](https://sandbox.payfast.co.za/)
+- Livewire
 - A [Payfast account](https://www.payfast.co.za/registration)
-- Sanctum
+- For testing, a free [Payfast sandbox account](https://sandbox.payfast.co.za/)
 
 ## Installation
 
