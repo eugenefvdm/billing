@@ -1,13 +1,20 @@
 {
-    "name": "eugenefvdm/billable-subscriptions",
-    "description": "A Laravel service provider and Livewire blades for Payfast and EFT subscription billing",
+    "name": "eugenefvdm/billing",
+    "description": "A Laravel service provider and Livewire UI components for Payfast and EFT subscription billing",
     "keywords": [
         "php",
         "laravel",
+        "livewire",
         "subscription-billing",
+        "subscriptions",
+        "recurring-billing",
         "payfast",
+        "payment-gateway",
         "eft",
-        "electronic-funds-transfer"
+        "south-africa",
+        "invoice",
+        "credit card",
+        "pdf-invoices"
     ],
     "authors": [
         {
@@ -38,7 +45,7 @@
         "guzzlehttp/guzzle": "*",
         "guzzlehttp/psr7": "*"
     },
-    "require-dev": {          
+    "require-dev": {
         "orchestra/testbench": "9",
         "spatie/laravel-ray": "*",
         "pestphp/pest": "^2.36",

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `billable-subscriptions` will be documented in this file.
+All notable changes to `biling` will be documented in this file.
 
 ## [v4.1] 2025-10-31
 
@@ -10,8 +10,8 @@ All notable changes to `billable-subscriptions` will be documented in this file.
 ## [v4.0] 2025-10-30
 
 - Complete rewrite
-- Package renamed to eugenefvdm/billable-subscriptions
-- Added EFT and invoicing logic, including invoice reminders
+- Package renamed to eugenefvdm/billing
+- Added EFT and invoicing logic, including invoice reminders, and PDF invoices
 
 ### Removed
 
