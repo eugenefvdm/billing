@@ -61,13 +61,12 @@ return [
         'passphrase' => env('PAYFAST_PASSPHRASE'),
 
         'test_mode' => env('PAYFAST_TEST_MODE'),
-        'test_mode_callback_url' => env('PAYFAST_TEST_MODE_CALLBACK_URL', config('app.url')),
-
-        'trial_days' => env('PAYFAST_TRIAL_DAYS', 30),
-
+        
         'merchant_id_test' => env('PAYFAST_MERCHANT_ID_TEST'),
         'merchant_key_test' => env('PAYFAST_MERCHANT_KEY_TEST'),
         'passphrase_test' => env('PAYFAST_PASSPHRASE_TEST'),
+
+        'test_mode_callback_url' => env('PAYFAST_TEST_MODE_CALLBACK_URL', config('app.url')),        
 
         'debug' => env('PAYFAST_DEBUG', false),
 

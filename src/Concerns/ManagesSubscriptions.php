@@ -5,16 +5,10 @@ namespace Eugenefvdm\Billing\Concerns;
 use Carbon\Carbon;
 use Eugenefvdm\Billing\Cashier;
 use Eugenefvdm\Billing\Subscription;
-use Eugenefvdm\Billing\SubscriptionBuilder;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait ManagesSubscriptions
 {
-    public function newSubscription($name, $plan): SubscriptionBuilder
-    {
-        return new SubscriptionBuilder($this, $name, $plan);
-    }
-
     /**
      * Get all the subscriptions for the Billable model.
      *
