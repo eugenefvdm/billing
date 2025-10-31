@@ -102,9 +102,38 @@ php artisan migrate
 
 See `config/billing.php`.
 
-The top part of `billing.php` is based on Laravel Spark's config.
+The top part of `billing.php` is based on [Laravel Spark Paddle's config](https://spark.laravel.com/docs/spark-paddle/configuration#defining-subscription-plans).
 
-The second part of `billing.php` is the Payfast specific code.
+The second part of `billing.php` is the Payfast specific configuration.
+
+You'll need at least these three in the `.env` file:
+
+```bash
+PAYFAST_MERCHANT_ID=
+PAYFAST_MERCHANT_KEY=
+PAYFAST_PASSPHRASE=
+```
+
+For Sandbox mode, you'll need:
+
+```bash
+PAYFAST_TEST_MODE=true
+PAYFAST_MERCHANT_ID_TEST=
+PAYFAST_MERCHANT_KEY_TEST=
+PAYFAST_PASSPHRASE_TEST=
+```
+
+For localhost testing, you'll need `Ngrok` or `Expose` and then add the callback URL:
+
+```bash
+PAYFAST_TEST_MODE_CALLBACK_URL=
+```
+
+Here is an example Ngrok command to run when working on locahost.
+
+```bash
+ngrok http https://myapp.test --host-header=rewrite --domain=ngrok-supplied-url.ngrok-free.app
+```
 
 ## Livewire setup
 
