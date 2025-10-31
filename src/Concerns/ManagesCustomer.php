@@ -16,7 +16,10 @@ trait ManagesCustomer
      */
     public function createAsCustomer(array $attributes = []): Customer
     {
-        return $this->customer()->create($attributes);
+        return $this->customer()->create(array_merge([
+            'name' => $this->name ?? null,
+            'email' => $this->email ?? $this->payfastEmail(),
+        ], $attributes));
     }
 
     /**

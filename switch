@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Check if package name is provided
+if [ -z "$1" ]; then
+    echo "Usage: $0 <vendor/package>"
+    echo "Example: $0 eugenefvdm/billing"
+    exit 1
+fi
+
+# Store full package name
+FULL_PACKAGE_NAME="$1"
+
+# Extract package name from vendor/package format
+PACKAGE_NAME=$(echo "$1" | cut -d'/' -f2)
+
+# Check if composer.json exists
+if [ ! -f "composer.json" ]; then
+    echo "Error: composer.json not found in current directory"
+    exit 1
+fi
+
+# Create a temporary file
+TMP_FILE=$(mktemp)
+
+# Check if the repository already exists - fixed the grep pattern
+if grep -q "\"url\": \"../$(echo $PACKAGE_NAME | sed 's/\//\\\//g')\"" composer.json; then
+    echo "Found repository for $PACKAGE_NAME, removing it..."
+    
+    # Use jq to remove the repository entry if it exists
+    jq --arg pkg "../$PACKAGE_NAME" '
+    if .repositories then
+        .repositories = (.repositories | map(select(.url != $pkg)))
+        | if .repositories == [] then del(.repositories) else . end
+    else .
+    end' composer.json > "$TMP_FILE"
+    
+    mv "$TMP_FILE" composer.json
+    echo "Removed repository entry for $PACKAGE_NAME"
+else
+    echo "Repository for $PACKAGE_NAME not found, adding it..."
+    
+    # Use jq to add the repository
+    jq --arg pkg "../$PACKAGE_NAME" '
+    if .repositories then
+        .repositories += [{"type": "path", "url": $pkg}]
+    else
+        . + {"repositories": [{"type": "path", "url": $pkg}]}
+    end' composer.json > "$TMP_FILE"
+    
+    mv "$TMP_FILE" composer.json
+    echo "Added repository entry for $PACKAGE_NAME"
+fi
+
+# Format the JSON file
+if command -v jq &> /dev/null; then
+    jq '.' composer.json > "$TMP_FILE" && mv "$TMP_FILE" composer.json
+fi
+
+# Run composer require with the package name
+echo "Running 'composer require $FULL_PACKAGE_NAME'"
+composer require "$FULL_PACKAGE_NAME:dev-main"
+
+echo "Done!"

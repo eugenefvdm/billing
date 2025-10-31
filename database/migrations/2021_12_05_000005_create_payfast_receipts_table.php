@@ -12,7 +12,7 @@ return new class extends Migration{
      */
     public function up(): void
     {
-        Schema::create('receipts', function (Blueprint $table) {
+        Schema::create('payfast_receipts', function (Blueprint $table) {
             $table->id();
             $table->string('merchant_payment_id')->nullable();            
             $table->string('payfast_payment_id');
@@ -22,7 +22,7 @@ return new class extends Migration{
             $table->string('amount_gross');
             $table->string('amount_fee');
             $table->string('amount_net');
-            $table->string('payfast_token')->nullable()->index();
+            $table->string('provider_id')->nullable()->index(); // For Payfast: this is the subscription token
             $table->string('payment_method')->nullable();
             $table->string('billable_type')->nullable();
             $table->unsignedBigInteger('billable_id')->nullable();                        
@@ -41,6 +41,6 @@ return new class extends Migration{
      */
     public function down(): void
     {
-        Schema::dropIfExists('receipts');
+        Schema::dropIfExists('payfast_receipts');
     }
 };

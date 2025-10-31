@@ -1,9 +1,10 @@
 # Changelog
 
-All notable changes to `biling` will be documented in this file.
+All notable changes to `billing` will be documented in this file.
 
 ## [v4.1] 2025-10-31
 
+- Removed PHP CS Fixer
 - Renamed config('payfast') to config('billing')
 - Added payfast to billing.payfast so layer the Payfast variables lower down
 

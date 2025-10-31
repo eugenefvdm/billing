@@ -56,7 +56,7 @@ class Subscriptions extends Component
 
     public function cancelSubscription(): void
     {
-        Payfast::debug('Cancelling subscription for ' . $this->user->subscriptions()->active()->first()->payfast_token, 'warning');
+        Payfast::debug('Cancelling subscription for ' . $this->user->subscriptions()->active()->first()->provider_id, 'warning');
 
         $this->user->subscription('default')->cancel2();
 
@@ -70,11 +70,11 @@ class Subscriptions extends Component
      */
     public function updateCard()
     {
-        $payfast_token = $this->user->subscription('default')->payfast_token;
+        $provider_id = $this->user->subscription('default')->provider_id;
 
-        ray("updateCard has been called with this token: $payfast_token");
+        ray("updateCard has been called with this token: $provider_id");
 
-        $url = Payfast::url() . "/recurring/update/$payfast_token?return=" . Payfast::updateCardCallbackUrl() . "/user/profile?card_updated=true";
+        $url = Payfast::url() . "/recurring/update/$provider_id?return=" . Payfast::updateCardCallbackUrl() . "/user/profile?card_updated=true";
 
         $message = "updateCard is going to redirect()->to this URL: " . $url;
 
@@ -94,20 +94,18 @@ class Subscriptions extends Component
      * and UI value which indicates when the plan will be payable next. The next
      * payable date depends on if the user has chosen a monthly or yearly sub.
      */
-    public function updatedPlan($planId)
+    public function updatedType($type)
     {
-        ray($planId);
+        ray($type);
 
-        $this->plan = $planId;
+        $this->type = $type;
 
         if ($this->user->onGenericTrial()) {
-            list($id, $frequency) = explode('|', $this->plan);
-
-            if ($frequency === 'monthly') {
+            if ($type === 'monthly') {
                 $this->afterTrialNextDueDate = $this->user->trialEndsAt()->addMonth()->addDay()->format('jS \o\f F Y');
             }
 
-            if ($frequency === 'yearly') {
+            if ($type === 'yearly') {
                 $this->afterTrialNextDueDate = $this->user->trialEndsAt()->addYear()->addDay()->format('jS \o\f F Y');
             }
         }
@@ -119,19 +117,17 @@ class Subscriptions extends Component
     public function displayCreateSubscription()
     {
         ray('displayCreateSubscription has been called');
-        ray($this->plan);
+        ray($this->type);
 
         // User's trial has been activated but they have never been a subscriber
         if ($this->user->onGenericTrial() && ! $this->user->subscribed('default')) {
             $billingDate = $this->user->trialEndsAt()->addDay();
 
-            list($planId, $frequency) = explode('|', $this->plan);
-
-            if ($frequency === 'monthly') {
+            if ($this->type === 'monthly') {
                 $billingDate = $billingDate->addMonth();
             }
 
-            if ($frequency === 'yearly') {
+            if ($this->type === 'yearly') {
                 $billingDate = $billingDate->addYear();
             }
 
@@ -152,7 +148,7 @@ class Subscriptions extends Component
         }
 
         $this->identifier = Payfast::createOnsitePayment(
-            $this->plan,
+            $this->type,
             $billingDate,
             $this->mergeFields
         );

@@ -154,10 +154,10 @@ class WebhookController extends Controller
 
         $subscription = $customer->subscriptions()->create([
             'name' => 'default',
-            'payfast_token' => $payload['token'],
-            'plan' => $payload['custom_str2'],
+            'provider_id' => $payload['token'],
+            'type' => $payload['custom_str2'], // 'monthly', 'yearly', etc.
             'merchant_payment_id' => $payload['m_payment_id'],
-            'payfast_status' => $payload['payment_status'],
+            'status' => $payload['payment_status'],
             'next_bill_at' => $payload['billing_date'] ?? null, // This happens when subscription was never created but then cancelled
         ]);
 
@@ -199,7 +199,7 @@ class WebhookController extends Controller
 
         // Create a receipt
         $receipt = $billable->receipts()->create([
-            'payfast_token' => $payload['token'],
+            'provider_id' => $payload['token'],
             'order_id' => $payload['m_payment_id'],
             'merchant_payment_id' => $payload['m_payment_id'],
             'payfast_payment_id' => $payload['pf_payment_id'],
@@ -218,7 +218,7 @@ class WebhookController extends Controller
         // Obtain fresh subscription information from Payfast which includes "run_date"
 
         // First get first subscription attached to this token
-        $subscription = Subscription::where('payfast_token', $payload['token'])->first();
+        $subscription = Subscription::where('provider_id', $payload['token'])->first();
 
         // Next get the current subscription data from Payfast
         $result = Payfast::fetchSubscription($payload['token']);
@@ -256,8 +256,8 @@ class WebhookController extends Controller
         ray("The subscription will end at " . $subscription->ends_at->format('Y-m-d'));
 
         $subscription->cancelled_at = now();
-        $subscription->payfast_status = $payload['payment_status'];
-        $subscription->paused_from = null;
+        $subscription->status = $payload['payment_status'];
+        $subscription->paused_at = null;
         $subscription->save();
 
         SubscriptionCancelled::dispatch($subscription, $payload);
@@ -265,20 +265,18 @@ class WebhookController extends Controller
 
     private function findSubscription(string $subscriptionId)
     {
-        return Cashier::$subscriptionModel::firstWhere('payfast_token', $subscriptionId);
+        return Cashier::$subscriptionModel::firstWhere('provider_id', $subscriptionId);
     }
 
     /**
-     * Get the subscription name by exploding the $plan to get the ID.
+     * Get the subscription name from the type (e.g., 'monthly', 'yearly').
      * This is only invoked during the hook and not when creating a payment subscription for the first time.
      */
     private function getSubscriptionName($payload)
     {
-        $customStr2 = $payload['custom_str2'];
+        $type = $payload['custom_str2']; // 'monthly', 'yearly', etc.
 
-        $planId = explode('|', $customStr2)[0];
-
-        return config('billing.billables.user.plans')[$planId]['name'] . ' ' . ucfirst(explode('|', $customStr2)[1]);
+        return ucfirst($type) . ' Subscription';
     }
 
     /**

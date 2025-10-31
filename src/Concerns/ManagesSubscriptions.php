@@ -171,15 +171,15 @@ trait ManagesSubscriptions
     }
 
     /**
-     * Determine if the entity has a valid subscription on the given plan.
+     * Determine if the entity has a valid subscription on the given type.
      *
-     * @param  string  $plan
+     * @param  string  $type
      * @return bool
      */
-    public function onPlan($plan)
+    public function onPlan($type)
     {
         return ! is_null($this->subscriptions()
-            ->where('plan', $plan)
+            ->where('type', $type)
             ->get()
             ->first(fn (Subscription $subscription) => $subscription->valid()));
     }

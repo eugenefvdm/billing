@@ -17,17 +17,17 @@ test('customers can perform subscription checks', function () {
 
     $subscription = $billable->subscriptions()->create([
         'name' => 'main',
-        'payfast_token' => "244",
-        'plan' => '0|test',
-        'payfast_status' => Subscription::STATUS_ACTIVE,
+        'provider_id' => "244",
+        'type' => 'monthly',
+        'status' => Subscription::STATUS_ACTIVE,
     ]);
 
     expect($billable->subscribed('main'))->toBeTrue();
     expect($billable->subscribed('default'))->toBeFalse();
-    expect($billable->subscribedToPlan('0|test'))->toBeFalse();
-    expect($billable->subscribedToPlan('0|test', 'main'))->toBeTrue();
-    expect($billable->onPlan('0|test'))->toBeTrue();
-    expect($billable->onPlan('1|test1'))->toBeFalse();
+    expect($billable->subscribedToPlan('yearly'))->toBeFalse();
+    expect($billable->subscribedToPlan('monthly', 'main'))->toBeTrue();
+    expect($billable->onPlan('monthly'))->toBeTrue();
+    expect($billable->onPlan('yearly'))->toBeFalse();
     expect($billable->onTrial('main'))->toBeFalse();
     expect($billable->onGenericTrial())->toBeFalse();
 
@@ -55,21 +55,21 @@ test('customers can check if their subscription is on trial', function () {
 
     $subscription = $billable->subscriptions()->create([
         'name' => 'main',
-        'payfast_token' => "244",
-        'plan' => '0|test',
-        'payfast_status' => Subscription::STATUS_TRIALING,
+        'provider_id' => "244",
+        'type' => 'monthly',
+        'status' => Subscription::STATUS_TRIALING,
         'trial_ends_at' => Carbon::tomorrow(),
     ]);
 
     expect($billable->subscribed('main'))->toBeTrue();
     expect($billable->subscribed('default'))->toBeFalse();
-    expect($billable->subscribedToPlan('0|test'))->toBeFalse();
-    expect($billable->subscribedToPlan('0|test', 'main'))->toBeTrue();
-    expect($billable->onPlan('0|test'))->toBeTrue();
-    expect($billable->onPlan('1|test2'))->toBeFalse();
+    expect($billable->subscribedToPlan('yearly'))->toBeFalse();
+    expect($billable->subscribedToPlan('monthly', 'main'))->toBeTrue();
+    expect($billable->onPlan('monthly'))->toBeTrue();
+    expect($billable->onPlan('yearly'))->toBeFalse();
     expect($billable->onTrial('main'))->toBeTrue();
-    expect($billable->onTrial('main', '0|test'))->toBeTrue();
-    expect($billable->onTrial('main', '1|test2'))->toBeFalse();
+    expect($billable->onTrial('main', 'monthly'))->toBeTrue();
+    expect($billable->onTrial('main', 'yearly'))->toBeFalse();
     expect($billable->onGenericTrial())->toBeFalse();
     expect(Carbon::tomorrow())->toEqual($billable->trialEndsAt('main'));
 
@@ -88,9 +88,9 @@ test('customers can check if their subscription is cancelled', function () {
 
     $subscription = $billable->subscriptions()->create([
         'name' => 'main',
-        'payfast_token' => "244",
-        'plan' => '0|test',
-        'payfast_status' => Subscription::STATUS_DELETED,
+        'provider_id' => "244",
+        'type' => 'monthly',
+        'status' => Subscription::STATUS_DELETED,
         'ends_at' => Carbon::tomorrow(),
     ]);
 
@@ -109,9 +109,9 @@ test('customers can check if the grace period is over', function () {
 
     $subscription = $billable->subscriptions()->create([
         'name' => 'main',
-        'payfast_token' => "244",
-        'plan' => '0|test',
-        'payfast_status' => Subscription::STATUS_DELETED,
+        'provider_id' => "244",
+        'type' => 'monthly',
+        'status' => Subscription::STATUS_DELETED,
         'ends_at' => Carbon::yesterday(),
     ]);
 
@@ -130,9 +130,9 @@ test('customers can check if the subscription is paused', function () {
 
     $subscription = $billable->subscriptions()->create([
         'name' => 'main',
-        'payfast_token' => "244",
-        'plan' => '0|test',
-        'payfast_status' => Subscription::STATUS_PAUSED,
+        'provider_id' => "244",
+        'type' => 'monthly',
+        'status' => Subscription::STATUS_PAUSED,
     ]);
 
     expect($subscription->valid())->toBeFalse();
@@ -150,10 +150,10 @@ test('subscriptions can be on a paused grace period', function () {
 
     $subscription = $billable->subscriptions()->create([
         'name' => 'main',
-        'payfast_token' => "244",
-        'plan' => '0|test',
-        'payfast_status' => Subscription::STATUS_ACTIVE,
-        'paused_from' => Carbon::tomorrow(),
+        'provider_id' => "244",
+        'type' => 'monthly',
+        'status' => Subscription::STATUS_ACTIVE,
+        'paused_at' => Carbon::tomorrow(),
     ]);
 
     expect($subscription->valid())->toBeTrue();

@@ -8,6 +8,13 @@ use Money\Currency;
 class Receipt extends Model
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'payfast_receipts';
+    
+    /**
      * The attributes that are not mass assignable.
      *
      * @var array
@@ -42,7 +49,7 @@ class Receipt extends Model
      */
     public function subscription()
     {
-        return $this->belongsTo(Cashier::$subscriptionModel, 'payfast_token', 'token');
+        return $this->belongsTo(Cashier::$subscriptionModel, 'provider_id', 'provider_id');
     }
 
     /**

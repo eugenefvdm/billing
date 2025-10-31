@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use DateTimeInterface;
 use Exception;
 use Eugenefvdm\Billing\Concerns\Prorates;
+use Eugenefvdm\Billing\Enums\PaymentMethod;
 use Eugenefvdm\Billing\Facades\Payfast;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,7 +22,7 @@ class Subscription extends Model
 {
     use Prorates;
 
-    public $table = 'payfast_subscriptions';
+    public $table = 'subscriptions';
 
     public const STATUS_ACTIVE = 'ACTIVE';
     public const STATUS_TRIALING = 'trialing';
@@ -55,11 +56,12 @@ class Subscription extends Model
      */
     protected $casts = [
         'token' => 'string',
-        'plan' => 'string',
+        'type' => 'string',
+        'payment_method' => PaymentMethod::class,
         'next_bill_at' => 'datetime',
         'cancelled_at' => 'datetime',
         'trial_ends_at' => 'datetime',
-        'paused_from' => 'datetime',
+        'paused_at' => 'datetime',
         'ends_at' => 'datetime',
     ];
 
@@ -87,18 +89,30 @@ class Subscription extends Model
      */
     public function receipts()
     {
-        return $this->hasMany(Cashier::$receiptModel, 'payfast_token', 'token')->orderByDesc('created_at');
+        return $this->hasMany(Cashier::$receiptModel, 'provider_id', 'provider_id')->orderByDesc('created_at');
     }
 
     /**
-     * Determine if the subscription has a specific plan.
+     * Determine if the subscription has a specific type.
+     *
+     * @param  string  $type
+     * @return bool
+     */
+    public function hasType($type)
+    {
+        return $this->type == $type;
+    }
+
+    /**
+     * Determine if the subscription has a specific plan (alias for hasType).
      *
      * @param  string  $plan
      * @return bool
+     * @deprecated Use hasType() instead
      */
     public function hasPlan($plan)
     {
-        return $this->plan == $plan;
+        return $this->hasType($plan);
     }
 
     /**
@@ -119,8 +133,8 @@ class Subscription extends Model
     public function active(): bool
     {
         return (is_null($this->ends_at) || $this->onGracePeriod() || $this->onPausedGracePeriod()) &&
-            (! Cashier::$deactivatePastDue || $this->payfast_status !== self::STATUS_PAST_DUE) &&
-            $this->payfast_status !== self::STATUS_PAUSED;
+            (! Cashier::$deactivatePastDue || $this->status !== self::STATUS_PAST_DUE) &&
+            $this->status !== self::STATUS_PAUSED;
     }
 
     /**
@@ -139,10 +153,10 @@ class Subscription extends Model
                 ->orWhere(function ($query) {
                     $query->onPausedGracePeriod();
                 });
-        })->where('payfast_status', '!=', self::STATUS_PAUSED);
+        })->where('status', '!=', self::STATUS_PAUSED);
 
         if (Cashier::$deactivatePastDue) {
-            $query->where('payfast_status', '!=', self::STATUS_PAST_DUE);
+            $query->where('status', '!=', self::STATUS_PAST_DUE);
         }
     }
 
@@ -153,7 +167,7 @@ class Subscription extends Model
      */
     public function pastDue()
     {
-        return $this->payfast_status === self::STATUS_PAST_DUE;
+        return $this->status === self::STATUS_PAST_DUE;
     }
 
     /**
@@ -164,7 +178,7 @@ class Subscription extends Model
      */
     public function scopePastDue($query)
     {
-        $query->where('payfast_status', self::STATUS_PAST_DUE);
+        $query->where('status', self::STATUS_PAST_DUE);
     }
 
     /**
@@ -195,7 +209,7 @@ class Subscription extends Model
      */
     public function paused()
     {
-        return $this->payfast_status === self::STATUS_PAUSED;
+        return $this->status === self::STATUS_PAUSED;
     }
 
     /**
@@ -206,7 +220,7 @@ class Subscription extends Model
      */
     public function scopePaused($query)
     {
-        $query->where('payfast_status', self::STATUS_PAUSED);
+        $query->where('status', self::STATUS_PAUSED);
     }
 
     /**
@@ -217,7 +231,7 @@ class Subscription extends Model
      */
     public function scopeNotPaused($query)
     {
-        $query->where('payfast_status', '!=', self::STATUS_PAUSED);
+        $query->where('status', '!=', self::STATUS_PAUSED);
     }
 
     /**
@@ -227,7 +241,7 @@ class Subscription extends Model
      */
     public function onPausedGracePeriod()
     {
-        return $this->paused_from && $this->paused_from->isFuture();
+        return $this->paused_at && $this->paused_at->isFuture();
     }
 
     /**
@@ -238,7 +252,7 @@ class Subscription extends Model
      */
     public function scopeOnPausedGracePeriod($query)
     {
-        $query->whereNotNull('paused_from')->where('paused_from', '>', Carbon::now());
+        $query->whereNotNull('paused_at')->where('paused_at', '>', Carbon::now());
     }
 
     /**
@@ -249,7 +263,7 @@ class Subscription extends Model
      */
     public function scopeNotOnPausedGracePeriod($query)
     {
-        $query->whereNull('paused_from')->orWhere('paused_from', '<=', Carbon::now());
+        $query->whereNull('paused_at')->orWhere('paused_at', '<=', Carbon::now());
     }
 
     /**
@@ -480,23 +494,23 @@ class Subscription extends Model
     }
 
     /**
-     * Swap the subscription to a new Payfast plan.
+     * Swap the subscription to a new type.
      *
-     * @param  string  $plan
+     * @param  string  $type
      * @param  array  $options
      * @return $this
      */
-    public function swap($plan, array $options = [])
+    public function swap($type, array $options = [])
     {
         $this->guardAgainstUpdates('swap plans');
 
         $this->updatePaddleSubscription(array_merge($options, [
-            'plan' => $plan,
+            'type' => $type,
             'prorate' => $this->prorate,
         ]));
 
         $this->forceFill([
-            'payfast_plan' => $plan,
+            'type' => $type,
         ])->save();
 
         $this->payfastInfo = null;
@@ -505,15 +519,15 @@ class Subscription extends Model
     }
 
     /**
-     * Swap the subscription to a new Paddle plan, and invoice immediately.
+     * Swap the subscription to a new type, and invoice immediately.
      *
-     * @param  int  $plan
+     * @param  string  $type
      * @param  array  $options
      * @return $this
      */
-    public function swapAndInvoice($plan, array $options = [])
+    public function swapAndInvoice($type, array $options = [])
     {
-        return $this->swap($plan, array_merge($options, [
+        return $this->swap($type, array_merge($options, [
             'bill_immediately' => true,
         ]));
     }
@@ -532,8 +546,8 @@ class Subscription extends Model
         $info = $this->payfastInfo();
 
         $this->forceFill([
-            'payfast_status' => $info['state'],
-            'paused_from' => Carbon::createFromFormat('Y-m-d H:i:s', $info['paused_from'], 'UTC'),
+            'status' => $info['state'],
+            'paused_at' => Carbon::createFromFormat('Y-m-d H:i:s', $info['paused_from'], 'UTC'),
         ])->save();
 
         $this->payfastInfo = null;
@@ -553,9 +567,9 @@ class Subscription extends Model
         ]);
 
         $this->forceFill([
-            'payfast_status' => self::STATUS_ACTIVE,
+            'status' => self::STATUS_ACTIVE,
             'ends_at' => null,
-            'paused_from' => null,
+            'paused_at' => null,
         ])->save();
 
         $this->payfastInfo = null;
@@ -585,17 +599,17 @@ class Subscription extends Model
         }
 
         $subscription = Subscription::where(
-            'payfast_token',
+            'provider_id',
             $result['data']['response']['token']
         )->firstOrFail();
 
-        Log::debug("payfast_status/status_text: ", [$result['data']['response']['status_text']]);
+        Log::debug("status/status_text: ", [$result['data']['response']['status_text']]);
         Log::debug("run_date: ", [$result['data']['response']['run_date']]);
 
-        $subscription->payfast_status = $result['data']['response']['status_text'];
+        $subscription->status = $result['data']['response']['status_text'];
         $subscription->next_bill_at = $result['data']['response']['run_date'];
 
-        if ($subscription->payfast_status == self::STATUS_DELETED && ! $subscription->cancelled_at) {
+        if ($subscription->status == self::STATUS_DELETED && ! $subscription->cancelled_at) {
             $message = ("Subscription status at Payfast is cancelled but no cancelled_at exists. Adding now() as cancellation date.");
 
             Log::warning($message);
@@ -668,8 +682,8 @@ class Subscription extends Model
         }
 
         if ($this->onPausedGracePeriod() || $this->paused()) {
-            $endsAt = $this->paused_from->isFuture()
-                ? $this->paused_from
+            $endsAt = $this->paused_at->isFuture()
+                ? $this->paused_at
                 : Carbon::now();
         } else {
             $endsAt = $this->onTrial()
@@ -692,8 +706,8 @@ class Subscription extends Model
         }
 
         if ($this->onPausedGracePeriod() || $this->paused()) {
-            $endsAt = $this->paused_from->isFuture()
-                ? $this->paused_from
+            $endsAt = $this->paused_at->isFuture()
+                ? $this->paused_at
                 : Carbon::now();
         } else {
             $endsAt = $this->onTrial()
@@ -732,7 +746,7 @@ class Subscription extends Model
         Cashier::post('/subscription/users_cancel', $payload);
 
         $this->forceFill([
-            'payfast_status' => self::STATUS_DELETED,
+            'status' => self::STATUS_DELETED,
             'ends_at' => $endsAt,
         ])->save();
 
@@ -753,10 +767,10 @@ class Subscription extends Model
      */
     public function cancelAt2(DateTimeInterface $endsAt)
     {
-        Payfast::cancelSubscription($this->payfast_token);
+        Payfast::cancelSubscription($this->provider_id);
 
         $this->forceFill([
-            'payfast_status' => self::STATUS_DELETED,
+            'status' => self::STATUS_DELETED,
             'ends_at' => $endsAt,
             'cancelled_at' => now(),
         ])->save();
@@ -897,7 +911,7 @@ class Subscription extends Model
             return $this->payfastInfo;
         }
 
-        $payfastInfo = Payfast::fetchSubscription($this->payfast_token)['data']['response'];
+        $payfastInfo = Payfast::fetchSubscription($this->provider_id)['data']['response'];
 
         return $this->payfastInfo = $payfastInfo;
     }

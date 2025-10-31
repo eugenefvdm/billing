@@ -60,14 +60,14 @@ class Payfast implements BillingProvider
         ];
     }
 
-    public function cancelSubscription($payfast_token)
+    public function cancelSubscription($provider_id)
     {
-        ray("cancelSubscription is called with this token: $payfast_token")->blue();
+        ray("cancelSubscription is called with this token: $provider_id")->blue();
 
         $append = $this->test_mode ? 'testing=true' : "";
 
         $response = Http::withHeaders($this->headers())
-            ->put("https://api.payfast.co.za/subscriptions/$payfast_token/cancel?$append")
+            ->put("https://api.payfast.co.za/subscriptions/$provider_id/cancel?$append")
             ->json();
 
         ray($response['data']['message'])->green();

@@ -230,34 +230,42 @@ Route::get('/update-card', function() {
 });
 ```
 
-## Testing
+## Workflows
 
 ### How to determine when a user's subscription ends
 
+```php
 $user->subscription('default')->ends_at = [date in the past]
+```
+
+## Testing
 
 ```bash
 composer test
 ```
 
-In your main project, add this:
+If you're developing against a project, you can use the `./switch` script to switch your project in and out of the repository.
 
-```
+This has the same effect as adding a repository and symlinking, and reversing it again when done.
+
+Adding a repo manually instead of using `./switch`:
+
+```json
 "repositories": [
         {
             "type": "path",
-            "url": "../payfast-onsite-subscriptions"
+            "url": "../billing"
         }
 ],
 ```
 
-Then do this to symlink the library:
+Symlinking manually:
 
-```
+```bash
 composer require fintechsystems/payfast-onsite-subscriptions:dev-main
 ```
 
-If you want to test trials, use this one-liner to activate a billable user and a trial using Tinker:
+If you want to test trials, use this one-liner to activate a billable user and a trial using say Tinker or [Tinkerwell](https://tinkerwell.app/):
 
 ```php
 $user = User::find(x)->createAsCustomer(['trial_ends_at' => now()->addDays(30)]);

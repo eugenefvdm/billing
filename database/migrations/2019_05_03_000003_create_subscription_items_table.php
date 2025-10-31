@@ -8,28 +8,27 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
     public function up(): void
     {
-        Schema::create('customers', function (Blueprint $table) {
+        Schema::create('subscription_items', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('billable_id');
-            $table->string('billable_type');
-            $table->timestamp('trial_ends_at')->nullable();
+            $table->foreignId('subscription_id');
+            $table->string('product_id');
+            $table->string('price_id');
+            $table->string('status');
+            $table->integer('quantity');
             $table->timestamps();
-            $table->index(['billable_id', 'billable_type']);
+
+            $table->unique(['subscription_id', 'price_id']);
         });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {
-        Schema::dropIfExists('customers');
+        Schema::dropIfExists('subscription_items');
     }
 };
