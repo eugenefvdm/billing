@@ -8,6 +8,8 @@ All notable changes to `billing` will be documented in this file.
 - Renamed config('payfast') to config('billing')
 - Added payfast to billing.payfast so layer the Payfast variables lower down
 - Fixed "Undefined array key" error in subscriptions view by using `type` field instead of `plan`
+- Removed inline color styles from subscription buttons for neutral/grey appearance
+- Fixed view namespace in Livewire components to use `payfast::` instead of `vendor.payfast.` (views no longer need to be published)
 
 ## [v4.0] 2025-10-30
 

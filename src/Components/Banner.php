@@ -57,8 +57,8 @@ class Banner extends Component
                 }
             } else {
                 $message = "You are subscribed to the "
-                        . config('billing.billables.user.plans')[explode('|', $user->subscription('default')->plan)[0]]['name']
-                        . ' ' . explode('|', $user->subscription('default')->plan)[1] . " plan.";
+                        . config('billing.billables.user.plans')[explode('|', $user->subscription('default')->type)[0]]['name']
+                        . ' ' . explode('|', $user->subscription('default')->type)[1] . " plan.";
             }
         }
 
@@ -67,6 +67,6 @@ class Banner extends Component
 
     public function render()
     {
-        return view('vendor.payfast.components.banner');
+        return view('payfast::components.banner');
     }
 }
