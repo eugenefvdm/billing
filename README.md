@@ -67,7 +67,7 @@ class User extends Authenticatable
 ## In your header
 
 ```php
-@if (config('payfast.test_mode'))
+@if (config('billing.payfast.test_mode'))
     <!-- Payfast Test Mode -->
     <script src="https://sandbox.payfast.co.za/onsite/engine.js" defer></script>
 @else
@@ -98,81 +98,13 @@ A migration is needed to create Customers, Orders, Receipts and Subscriptions ta
 php artisan migrate
 ```
 
-## Example Configuration
+## Configuration
 
-`config/payfast.php`:
+See `config/billing.php`.
 
-```php
-<?php
+The top part of `billing.php` is based on Laravel Spark's config.
 
-return [
-    'merchant_id' => env('PAYFAST_MERCHANT_ID'),
-    'merchant_key' => env('PAYFAST_MERCHANT_KEY'),
-    'passphrase' => env('PAYFAST_PASSPHRASE'),    
-    'test_mode' => env('PAYFAST_TEST_MODE'),
-    'test_mode_callback_url' => env('PAYFAST_TEST_MODE_CALLBACK_URL',config('app.url')),
-    'trial_days' => env('PAYFAST_TRIAL_DAYS', 30),
-    'merchant_id_test' => env('PAYFAST_MERCHANT_ID_TEST'),
-    'merchant_key_test' => env('PAYFAST_MERCHANT_KEY_TEST'),
-    'passphrase_test' => env('PAYFAST_PASSPHRASE_TEST'),
-    'debug' => env('PAYFAST_DEBUG', false),
-    'return_url' => env('PAYFAST_RETURN_URL', '/payfast/return'),
-    'cancel_url' => env('PAYFAST_CANCEL_URL', '/payfast/cancel'),
-    'notify_url' => env('PAYFAST_NOTIFY_URL', '/payfast/notify'),
-    'callback_url' => env('PAYFAST_CALLBACK_URL', config('app.url')),
-    'callback_url_test' => env('PAYFAST_CALLBACK_URL_TEST', ''),
-    'billables' => [
-        'user' => [
-            'model' => User::class,
-            'trial_days' => 30,
-            'default_interval' => 'monthly',
-            'currency_prefix' => 'R ',
-            'plans' => [
-                [
-                    'name' => 'Startup',
-                    'short_description' => "",
-                    'monthly' => [
-                        'setup_amount' => 69000,
-                        'recurring_amount' => 69000,
-                    ],
-                    'yearly' => [
-                        'setup_amount' => 700000,
-                        'recurring_amount' => 700000,
-                    ],
-                    'features' => [
-                        'Feature 1',
-                        'Feature 2',
-                        'Feature 3',
-                    ],
-                    'archived' => false,
-                    'cta' => '30 DAY FREE TRIAL',
-                    'mostPopular' => false,
-                ],
-                [
-                    'name' => 'Business',
-                    'short_description' => "",                    
-                    'monthly' => [
-                        'setup_amount' => 199000,
-                        'recurring_amount' => 199000,
-                    ],
-                    'yearly' => [
-                        'setup_amount' => 2189000,
-                        'recurring_amount' => 2189000,
-                    ],
-                    'features' => [
-                        'Feature 1',
-                        'Feature 2',
-                        'Feature 3',
-                    ],
-                    'archived' => false,
-                    'cta' => '30 DAY FREE TRIAL',
-                    'mostPopular' => true,
-                ],                
-            ],
-        ],
-    ],
-];
-```
+The second part of `billing.php` is the Payfast specific code.
 
 ## Livewire setup
 
@@ -200,7 +132,7 @@ Also look for the responsive part and add this:
 
 #### Adding the subscriptions and receipts views
 
-When calling the Livewire component, you can override any [PayFast form field](https://developers.payfast.co.za/docs#step_1_form_fields) by specifying a `mergeFields` array.
+When calling the Livewire component, you can override any [Payfast form field](https://developers.payfast.co.za/docs#step_1_form_fields) by specifying a `mergeFields` array.
 
 Example modification Jetstream Livewire's `resources/views/profiles/show.php`:
 
@@ -238,7 +170,7 @@ Replace `$user->name` with your first name and last name fields.
 - Update a card
 
 ```php
-use Eugenefvdm\PayFast\Facades\Payfast;
+use Eugenefvdm\Payfast\Facades\Payfast;
 
 Route::get('/payment', function() {
     return Payfast::payment(5,'Order #1');
@@ -308,8 +240,11 @@ Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed re
 
 ## Credits
 
-- [Eugene van der Merwe](https://github.com/eugenevdm)
+- [Eugene van der Merwe](https://github.com/eugenevdm) - Package author and maintainer
+- [Taylor Otwell](https://github.com/taylorotwell) - Portions of this package were derived from [Laravel Cashier](https://github.com/laravel/cashier-paddle), particularly the Billable trait, subscription management, and customer handling patterns
 
 ## License
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
+
+This package includes code derived from Laravel Cashier (Paddle) which is also licensed under the MIT License. Copyright (c) Taylor Otwell.

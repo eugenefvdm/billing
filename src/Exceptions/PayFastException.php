@@ -4,7 +4,7 @@ namespace Eugenefvdm\Billing\Exceptions;
 
 use Exception;
 
-class PayFastException extends Exception
+class PayfastException extends Exception
 {
     //
 }

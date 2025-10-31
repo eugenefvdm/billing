@@ -36,16 +36,16 @@ class Payfast implements BillingProvider
             $this->merchant_key = $client['merchant_key_test'];
             $this->passphrase = $client['passphrase_test'];
             $this->url = 'https://sandbox.payfast.co.za​/onsite/process';
-            $prependUrl = config('payfast.test_mode_callback_url');
+            $prependUrl = config('billing.payfast.test_mode_callback_url');
         } else {
             $this->merchant_id = $client['merchant_id'];
             $this->merchant_key = $client['merchant_key'];
             $this->passphrase = $client['passphrase'];
             $this->url = 'https://www.payfast.co.za/onsite/process';
-            $prependUrl = config('payfast.callback_url');
+            $prependUrl = config('billing.payfast.callback_url');
         }
 
-        if (config('payfast.debug') == true) {
+        if (config('billing.payfast.debug') == true) {
             //            Log::debug("In Payfast API constructor, test_mode: $this->test_mode, URL: $this->url");
         }
 
@@ -235,7 +235,7 @@ class Payfast implements BillingProvider
             $message = $caller . "#$line|" . $message;
         }
 
-        if ($level == 'debug' && ! config('payfast.debug')) {
+        if ($level == 'debug' && ! config('billing.payfast.debug')) {
             return;
         }
 
@@ -328,7 +328,7 @@ class Payfast implements BillingProvider
 
         ray($planId);
 
-        $plan = config('payfast.billables.user.plans')[$planId];
+        $plan = config('billing.billables.user.plans')[$planId];
 
         $planDetail = [];
         $recurringType = "";
@@ -441,9 +441,9 @@ class Payfast implements BillingProvider
     public function updateCardCallbackUrl()
     {
         if ($this->test_mode == 'true') {
-            return config('payfast.callback_url_test');
+            return config('billing.payfast.callback_url_test');
         } else {
-            return config('payfast.callback_url');
+            return config('billing.payfast.callback_url');
         }
     }
 

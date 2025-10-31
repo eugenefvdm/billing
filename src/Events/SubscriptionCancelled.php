@@ -14,7 +14,7 @@ class SubscriptionCancelled
     /**
      * The subscription instance.
      *
-     * @var \Eugenefvdm\PayFast\Subscription
+     * @var \Eugenefvdm\Payfast\Subscription
      */
     public $subscription;
 
@@ -28,7 +28,7 @@ class SubscriptionCancelled
     /**
      * Create a new event instance.
      *
-     * @param  \Eugenefvdm\PayFast\Subscription  $subscription
+     * @param  \Eugenefvdm\Payfast\Subscription  $subscription
      * @param  array  $payload
      * @return void
      */

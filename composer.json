@@ -1,12 +1,13 @@
 {
     "name": "eugenefvdm/billable-subscriptions",
     "description": "A Laravel service provider and Livewire blades for Payfast and EFT subscription billing",
-    "keywords": [        
+    "keywords": [
+        "php",
         "laravel",
+        "subscription-billing",
         "payfast",
         "eft",
-        "electronic-funds-transfer",
-        "subscription-billing"
+        "electronic-funds-transfer"
     ],
     "authors": [
         {

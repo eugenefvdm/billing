@@ -72,7 +72,7 @@ trait Payfast
 
                 $planId = $planParts[0];
 
-                return config('payfast.billables.user.plans')[$planId]['name'] ?? null;
+                return config('billing.billables.user.plans')[$planId]['name'] ?? null;
             }
         );
     }
@@ -125,7 +125,7 @@ trait Payfast
                 $planId = $planParts[0];
                 $frequency = $planParts[1] ?? 'monthly';
 
-                $amount = config('payfast.billables.user.plans')[$planId][$frequency]['recurring_amount'] ?? null;
+                $amount = config('billing.billables.user.plans')[$planId][$frequency]['recurring_amount'] ?? null;
 
                 return $amount ? 'R' . number_format($amount / 100) : null;
             }

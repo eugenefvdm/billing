@@ -72,7 +72,7 @@
                     <h3 class="text-lg font-medium text-gray-900">
                         You are subscribed to the
                         {{ 
-                            config('payfast.billables.user.plans')
+                            config('billing.billables.user.plans')
                             [explode('|', $user->subscription('default')->plan)
                             [0]]
                             ['name'] 
@@ -107,9 +107,9 @@
                 <div class="flex">
                     <select wire:model="plan" name="plan"
                         class="mt-1 block pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                        @foreach (config('payfast.billables.user.plans') as $index => $plan)
-                            <option value="{{ $index }}|monthly">{{ $plan['name'] }} Monthly - {{ config('payfast.billables.user.currency_prefix') }}{{ number_format($plan['monthly']['recurring_amount'] / 100, 2) }}</option>
-                            <option value="{{ $index }}|yearly">{{ $plan['name'] }} Yearly - {{ config('payfast.billables.user.currency_prefix') }}{{ number_format($plan['yearly']['recurring_amount'] / 100, 2) }}</option>
+                        @foreach (config('billing.billables.user.plans') as $index => $plan)
+                            <option value="{{ $index }}|monthly">{{ $plan['name'] }} Monthly - {{ config('billing.billables.user.currency_prefix') }}{{ number_format($plan['monthly']['recurring_amount'] / 100, 2) }}</option>
+                            <option value="{{ $index }}|yearly">{{ $plan['name'] }} Yearly - {{ config('billing.billables.user.currency_prefix') }}{{ number_format($plan['yearly']['recurring_amount'] / 100, 2) }}</option>
                         @endforeach
                     </select>
 
@@ -132,11 +132,11 @@
         </div>
         <!-- End Subscription Action Buttons -->
 
-        <!-- Launch PayFast Subscription Modal -->
+        <!-- Launch Payfast Subscription Modal -->
         <script>
             document.addEventListener('livewire:init', () => {
                 Livewire.on('launchPayfast', ({ identifier }) => {
-                    console.log('Launching PayFast onsite payment modal');
+                    console.log('Launching Payfast onsite payment modal');
                     console.log('identifier: ' + identifier)
                     window.payfast_do_onsite_payment({
                         uuid: identifier

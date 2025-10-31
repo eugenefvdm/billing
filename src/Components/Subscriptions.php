@@ -32,7 +32,7 @@ class Subscriptions extends Component
     ];
 
     /**
-     * After billing is updated, that means when PayFast onsite subscription modal goes
+     * After billing is updated, that means when Payfast onsite subscription modal goes
      * away, the front-end must reflect the changes that could be a new subscription
      * or the receipt that was updated when a paying also came in.
      */
@@ -90,7 +90,7 @@ class Subscriptions extends Component
     }
 
     /**
-     * When the selected plan changes, refresh the PayFast identifier's signature
+     * When the selected plan changes, refresh the Payfast identifier's signature
      * and UI value which indicates when the plan will be payable next. The next
      * payable date depends on if the user has chosen a monthly or yearly sub.
      */

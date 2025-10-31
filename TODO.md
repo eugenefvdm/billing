@@ -1,3 +1,3 @@
-- I still see PayFast in the code!
+- I still see Payfast in the code!
 - Removing the custom debugger
 - Where Log::debug change to config('billling.debug) ?? Log::debug

@@ -278,7 +278,7 @@ class WebhookController extends Controller
 
         $planId = explode('|', $customStr2)[0];
 
-        return config('payfast.billables.user.plans')[$planId]['name'] . ' ' . ucfirst(explode('|', $customStr2)[1]);
+        return config('billing.billables.user.plans')[$planId]['name'] . ' ' . ucfirst(explode('|', $customStr2)[1]);
     }
 
     /**

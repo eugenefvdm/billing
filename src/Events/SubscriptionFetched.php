@@ -22,7 +22,7 @@ class SubscriptionFetched
     /**
      * The subscription instance.
      *
-     * @var \Eugenefvdm\PayFast\Subscription
+     * @var \Eugenefvdm\Payfast\Subscription
      */
     public $subscription;
 
@@ -37,7 +37,7 @@ class SubscriptionFetched
      * Create a new event instance.
      *
      * @param  \Illuminate\Database\Eloquent\Model  $billable
-     * @param  \Eugenefvdm\PayFast\Subscription  $subscription
+     * @param  \Eugenefvdm\Payfast\Subscription  $subscription
      * @param  array  $payload
      * @return void
      */

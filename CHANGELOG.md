@@ -2,6 +2,11 @@
 
 All notable changes to `billable-subscriptions` will be documented in this file.
 
+## [v4.1] 2025-10-31
+
+- Renamed config('payfast') to config('billing')
+- Added payfast to billing.payfast so layer the Payfast variables lower down
+
 ## [v4.0] 2025-10-30
 
 - Complete rewrite

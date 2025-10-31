@@ -24,7 +24,7 @@ class SubscriptionStatus
                 $status = ["cancelled" => $user->subscription('default')->ends_at->format('Y-m-d')];
             } else {
                 $status = [
-                    "subscribed" => config('payfast.billables.user.plans')
+                    "subscribed" => config('billing.billables.user.plans')
                     [explode('|', $user->subscription('default')->plan)[0]]
                     ['name'] . ' ' . explode('|', $user->subscription('default')->plan)[1] . " plan.",
                 ];
