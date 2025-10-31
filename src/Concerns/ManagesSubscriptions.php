@@ -177,4 +177,25 @@ trait ManagesSubscriptions
             ->get()
             ->first(fn (Subscription $subscription) => $subscription->valid()));
     }
+
+    /**
+     * Get all invoices for the Billable model.
+     *
+     * @return MorphMany
+     */
+    public function invoices(): MorphMany
+    {
+        return $this->morphMany(\Eugenefvdm\Billing\Invoice::class, 'billable')->orderByDesc('created_at');
+    }
+
+    /**
+     * Find an invoice by UUID.
+     *
+     * @param  string  $uuid
+     * @return \Eugenefvdm\Billing\Invoice|null
+     */
+    public function findInvoice(string $uuid): ?\Eugenefvdm\Billing\Invoice
+    {
+        return $this->invoices()->where('uuid', $uuid)->first();
+    }
 }

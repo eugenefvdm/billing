@@ -23,6 +23,7 @@ class BillingServiceProvider extends ServiceProvider
         ], 'views');
 
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'payfast');
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'billing');
 
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
 
@@ -46,6 +47,14 @@ class BillingServiceProvider extends ServiceProvider
 
 <?php echo \$__env->yieldPushContent('payfast-event-listener'); ?>";
         });
+
+        // Register commands
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                Commands\SubscriptionForwardCommand::class,
+                Commands\CheckOverdueInvoicesCommand::class,
+            ]);
+        }
     }
 
     public function register()

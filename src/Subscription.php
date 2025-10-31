@@ -956,4 +956,146 @@ class Subscription extends Model
             6 => 'Annual'
         };
     }
+
+    /**
+     * EFT BILLING METHODS
+     */
+
+    /**
+     * Calculate the end date based on start date and interval.
+     */
+    public static function calculateEndsAt(Carbon $start, \Eugenefvdm\Billing\Enums\PlanInterval $interval): Carbon
+    {
+        return match ($interval) {
+            \Eugenefvdm\Billing\Enums\PlanInterval::Daily => $start->copy()->addDay(),
+            \Eugenefvdm\Billing\Enums\PlanInterval::Weekly => $start->copy()->addWeek(),
+            \Eugenefvdm\Billing\Enums\PlanInterval::Monthly => $start->copy()->addMonth(),
+            \Eugenefvdm\Billing\Enums\PlanInterval::Quarterly => $start->copy()->addMonths(3),
+            \Eugenefvdm\Billing\Enums\PlanInterval::Yearly => $start->copy()->addYear(),
+        };
+    }
+
+    /**
+     * Calculate the start date based on end date and interval.
+     */
+    protected function calculateStartsAt(Carbon $end, \Eugenefvdm\Billing\Enums\PlanInterval $interval): Carbon
+    {
+        return match ($interval) {
+            \Eugenefvdm\Billing\Enums\PlanInterval::Daily => $end->copy()->subDay(),
+            \Eugenefvdm\Billing\Enums\PlanInterval::Weekly => $end->copy()->subWeek(),
+            \Eugenefvdm\Billing\Enums\PlanInterval::Monthly => $end->copy()->subMonth(),
+            \Eugenefvdm\Billing\Enums\PlanInterval::Quarterly => $end->copy()->subMonths(3),
+            \Eugenefvdm\Billing\Enums\PlanInterval::Yearly => $end->copy()->subYear(),
+        };
+    }
+
+    /**
+     * Get the starts_at date (calculated from ends_at).
+     */
+    public function getStartsAtAttribute(): Carbon
+    {
+        if (!$this->ends_at) {
+            throw new Exception("Cannot calculate starts_at without ends_at");
+        }
+
+        return $this->calculateStartsAt($this->ends_at, $this->intervalFromType());
+    }
+
+    /**
+     * Get a human-readable period description.
+     */
+    public function getPeriodDescriptionAttribute(): string
+    {
+        return $this->planName() . ' ' 
+            . $this->starts_at->format('Y-m-d') 
+            . ' to ' 
+            . $this->ends_at->format('Y-m-d');
+    }
+
+    /**
+     * Get the plan configuration from config.
+     */
+    public function plan(): array
+    {
+        $plans = config('billing.billables.user.plans');
+        
+        // Find plan that has this subscription's type (monthly or yearly)
+        return collect($plans)->first(function ($plan) {
+            return isset($plan[$this->type]);
+        }) ?? [];
+    }
+
+    /**
+     * Get the plan name.
+     */
+    public function planName(): string
+    {
+        return $this->plan()['name'] ?? 'Unknown';
+    }
+
+    /**
+     * Get the interval enum from the subscription type.
+     */
+    public function intervalFromType(): \Eugenefvdm\Billing\Enums\PlanInterval
+    {
+        // Extract "monthly" or "yearly" from type field
+        return \Eugenefvdm\Billing\Enums\PlanInterval::from($this->type);
+    }
+
+    /**
+     * Forward the EFT subscription to the next billing period.
+     * 
+     * This is the core of EFT billing. It:
+     * 1. Creates an invoice for the current period
+     * 2. Generates and emails the PDF
+     * 3. Moves the subscription forward by one interval
+     */
+    public function forward(): void
+    {
+        // Only process EFT subscriptions
+        if ($this->payment_method !== PaymentMethod::Eft) {
+            return;
+        }
+
+        // Only forward if current period has ended
+        if ($this->starts_at >= now()) {
+            return;
+        }
+
+        // Create invoice for the period
+        $invoice = \Eugenefvdm\Billing\Services\InvoiceService::createSubscriptionInvoice($this);
+
+        // Generate PDF
+        \Eugenefvdm\Billing\Services\InvoiceService::createPdf($invoice);
+
+        // Email invoice
+        \Illuminate\Support\Facades\Mail::to($this->billable->email)
+            ->send(new \Eugenefvdm\Billing\Mail\InvoiceCreated($invoice));
+
+        // Move ends_at forward by one interval
+        $this->ends_at = self::calculateEndsAt(
+            $this->ends_at,
+            $this->intervalFromType()
+        );
+
+        $this->save();
+
+        Log::info("Forwarded EFT subscription {$this->id}, new ends_at: {$this->ends_at}");
+    }
+
+    /**
+     * Scope a query to only include EFT subscriptions.
+     */
+    public function scopeEft($query)
+    {
+        return $query->where('payment_method', PaymentMethod::Eft);
+    }
+
+    /**
+     * Scope a query to only include Card subscriptions.
+     */
+    public function scopeCard($query)
+    {
+        return $query->where('payment_method', PaymentMethod::Card);
+    }
 }

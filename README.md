@@ -279,6 +279,159 @@ If you want to test trials, use this one-liner to activate a billable user and a
 $user = User::find(x)->createAsCustomer(['trial_ends_at' => now()->addDays(30)]);
 ```
 
+## EFT Billing
+
+This package supports both **Card payments** (via Payfast onsite) and **EFT (bank transfer) payments** with automated invoice generation and reminders.
+
+### How EFT Billing Works
+
+1. **Subscription Creation**: Create an EFT subscription with a start date
+2. **Forward Mechanism**: A scheduled command "forwards" the subscription by one billing period
+3. **Invoice Generation**: When forwarding, an invoice is automatically created with a PDF
+4. **Email Delivery**: The invoice PDF is emailed to the customer
+5. **Overdue Reminders**: Automated reminders are sent at configurable intervals
+
+### Configuration
+
+Add these to your `.env`:
+
+```env
+# Invoice Settings
+INVOICE_DEFAULT_DUE_DAYS=7
+INVOICE_PDF_PATH=invoices
+
+# Overdue Notice Intervals (days after due date)
+INVOICE_FIRST_OVERDUE_NOTICE=3
+INVOICE_SECOND_OVERDUE_NOTICE=6
+INVOICE_THIRD_OVERDUE_NOTICE=9
+```
+
+### Scheduled Commands
+
+Add to your `routes/console.php`:
+
+```php
+use Illuminate\Support\Facades\Schedule;
+
+// Forward EFT subscriptions - creates invoices and moves subscription forward
+Schedule::command('subscriptions:forward')->hourly();
+
+// Send overdue reminders for unpaid EFT invoices
+Schedule::command('invoices:check-overdue')->daily();
+```
+
+### Creating an EFT Subscription
+
+```php
+use Eugenefvdm\Billing\Enums\PaymentMethod;
+
+// Create EFT subscription
+$subscription = $user->subscriptions()->create([
+    'name' => 'default',
+    'type' => 'monthly', // or 'yearly'
+    'payment_method' => PaymentMethod::Eft,
+    'status' => 'ACTIVE',
+    'start_date' => now(),
+    'ends_at' => now()->addMonth(),
+]);
+
+// First invoice is created immediately
+// Forward command will create subsequent invoices automatically
+```
+
+### Accessing Invoices
+
+```php
+// Get all invoices for a user
+$invoices = $user->invoices;
+
+// Find invoice by UUID (for guest viewing)
+$invoice = $user->findInvoice($uuid);
+
+// Check invoice status
+if ($invoice->isPaid()) {
+    // Invoice is paid
+}
+
+if ($invoice->isOverdue()) {
+    $daysPastDue = $invoice->days_past_due;
+}
+```
+
+### Guest Invoice Viewing
+
+Invoices can be viewed without authentication using their UUID:
+
+```
+https://yourapp.com/invoices/{uuid}
+https://yourapp.com/invoices/{uuid}/download
+```
+
+These URLs are included in email notifications and are secure (UUID is hard to guess).
+
+### Manual Invoice Operations
+
+```php
+use Eugenefvdm\Billing\Services\InvoiceService;
+
+// Manually create an invoice for a subscription
+$invoice = InvoiceService::createSubscriptionInvoice($subscription);
+
+// Generate PDF
+InvoiceService::createPdf($invoice);
+
+// Stream PDF to browser
+InvoiceService::createPdf($invoice, stream: true);
+
+// Mark as paid
+$invoice->markAsPaid();
+```
+
+### Payment Instructions
+
+Update the payment instructions in:
+- `resources/views/vendor/billing/pdf/invoice.blade.php`
+- `resources/views/vendor/billing/mail/invoice-created.blade.php`
+- `resources/views/vendor/billing/invoices/show.blade.php`
+
+Replace `[Your Bank Name]`, `[Your Account Number]`, etc. with your actual banking details.
+
+### Reminder System
+
+The reminder system is **notification only** - it never changes subscription status automatically:
+
+1. **First Notice** (3 days overdue by default): Friendly reminder
+2. **Second Notice** (6 days overdue): Firmer tone
+3. **Third Notice** (9 days overdue): Final notice
+
+Reminders are only sent once per period. The system tracks when each reminder was sent.
+
+### Testing EFT Flow
+
+```php
+// In Tinker or a test
+$user = User::first();
+
+// Create EFT subscription
+$subscription = $user->subscriptions()->create([
+    'type' => 'monthly',
+    'payment_method' => \Eugenefvdm\Billing\Enums\PaymentMethod::Eft,
+    'status' => 'ACTIVE',
+    'start_date' => now()->subMonth(), // In the past
+    'ends_at' => now()->subDay(), // Period already ended
+]);
+
+// Run forward command
+php artisan subscriptions:forward
+
+// Check that invoice was created
+$user->invoices; // Should have 1 invoice
+
+// Check that subscription moved forward
+$subscription->refresh();
+$subscription->ends_at; // Should be ~1 month from now
+```
+
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.

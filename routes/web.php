@@ -19,3 +19,14 @@ Route::post('/payfast/webhook', 'Eugenefvdm\Billing\Http\Controllers\WebhookCont
 Route::middleware(['auth','web'])
     ->get('/settings/billing', Billing::class)
     ->name('settings.billing');
+
+// Invoice routes (no auth required - secured by UUID)
+Route::get('/invoices/{uuid}', function ($uuid) {
+    $invoice = \Eugenefvdm\Billing\Invoice::where('uuid', $uuid)->firstOrFail();
+    return view('billing::invoices.show', ['invoice' => $invoice]);
+})->name('invoices.show');
+
+Route::get('/invoices/{uuid}/download', function ($uuid) {
+    $invoice = \Eugenefvdm\Billing\Invoice::where('uuid', $uuid)->firstOrFail();
+    return \Eugenefvdm\Billing\Services\InvoiceService::createPdf($invoice, true);
+})->name('invoices.download');
