@@ -15,7 +15,7 @@ class Subscriptions extends Component
 
     public $displayingCreateSubscription = false;
 
-    public $plan = '0|monthly'; // TODO when initializing this component, we need a way to specify the default plan what will be selected.
+    public $type = '0|monthly';
 
     public $identifier;
 

@@ -8,16 +8,16 @@
     </x-slot>
 
     <x-slot name="content">
-        <div class="max-w-xl text-sm text-gray-600">
+        <div class="max-w-xl text-sm text-gray-600 dark:text-gray-400">
 
             <!-- Check if the current logged in user is subscribed to a plan -->
             @if (!$user->subscribed('default'))
                 {{-- Trial --}}
                 @if ($user->onGenericTrial())
-                    <h3 class="text-lg font-medium text-gray-900">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                         You are currently on trial till the {{ $user->trialEndsAt()->format('jS \o\f F Y') }}
                     </h3>
-                    <div class="mt-3 max-w-xl text-sm text-gray-600">
+                    <div class="mt-3 max-w-xl text-sm text-gray-600 dark:text-gray-400">
                         <p>
                             If you subscribe now next payment will be due on the
                             {{ $this->afterTrialNextDueDate }}
@@ -25,20 +25,20 @@
                     </div>
                 @elseif($user->hasExpiredGenericTrial())
                 {{-- Expired Generic Trial --}}
-                    <h3 class="text-lg font-medium text-gray-900">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                         Your trial has expired.
                     </h3>
-                    <div class="mt-3 max-w-xl text-sm text-gray-600">
+                    <div class="mt-3 max-w-xl text-sm text-gray-600 dark:text-gray-400">
                         <p>
                             {{ __('Please select from our plans below:') }}
                         </p>
                     </div>
                 @else
                 {{-- No Subscription --}}
-                <h3 class="text-lg font-medium text-gray-900">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                         You are not currently subscribed to a plan.
                     </h3>
-                    <div class="mt-3 max-w-xl text-sm text-gray-600">
+                    <div class="mt-3 max-w-xl text-sm text-gray-600 dark:text-gray-400">
                         <p>
                             {{ __('Please select from our plans below:') }}
                         </p>
@@ -47,11 +47,11 @@
             @else
                 @if ($user->subscription('default')->onGracePeriod())
                 {{-- Grace period --}}
-                    <h3 class="text-lg font-medium text-gray-900">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                         Your subscription was cancelled
                         {{ $user->subscription('default')->cancelled_at->format('j F Y \a\t H:i:s') }}.
                     </h3>
-                    <div class="mt-3 max-w-xl text-sm text-gray-600">
+                    <div class="mt-3 max-w-xl text-sm text-gray-600 dark:text-gray-400">
                         @if (\Carbon\Carbon::now()->diffInDays(
                             $user->subscriptions()->active()->first()->ends_at->format('Y-m-d'),
                         ) != 0)
@@ -69,19 +69,19 @@
                     </div>
                 @else
                     {{-- Subscribed --}}
-                    <h3 class="text-lg font-medium text-gray-900">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                         You are subscribed to the
                         {{ 
                             config('billing.billables.user.plans')
-                            [explode('|', $user->subscription('default')->plan)
+                            [explode('|', $user->subscription('default')->type)
                             [0]]
                             ['name'] 
                         }} 
                         {{ 
-                            explode('|', $user->subscription('default')->plan)[1] 
+                            explode('|', $user->subscription('default')->type)[1] 
                         }} plan.
                     </h3>
-                    <div class="mt-3 max-w-xl text-sm text-gray-600">
+                    <div class="mt-3 max-w-xl text-sm text-gray-600 dark:text-gray-400">
                         <p>
                             The next payment will go off on the
                                 {{ $user->subscription('default')->next_bill_at->format('jS \o\f F Y') }}.
@@ -95,17 +95,17 @@
         <div class="mt-5">
             {{-- @if ($user->subscribed('default') && !$user->onGenericTrial() && !$user->subscription('default')->onGracePeriod())                             --}}
             @if ($user->subscribed('default')  && !$user->subscription('default')->onGracePeriod())
-                <x-payfast::secondary-button style="color: blue;" wire:click="updateCard">
+                <x-payfast::secondary-button wire:click="updateCard">
                     {{ __('Update Card Information') }}
                 </x-payfast::secondary-button>
 
-                <x-payfast::secondary-button style="color: red;" wire:click="confirmCancelSubscription"
+                <x-payfast::secondary-button wire:click="confirmCancelSubscription"
                     wire:loading.attr="disabled">
                     {{ __('Cancel Subscription') }}
                 </x-payfast::secondary-button>
             @else
                 <div class="flex">
-                    <select wire:model="plan" name="plan"
+                    <select wire:model="type" name="type"
                         class="mt-1 block pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
                         @foreach (config('billing.billables.user.plans') as $index => $plan)
                             <option value="{{ $index }}|monthly">{{ $plan['name'] }} Monthly - {{ config('billing.billables.user.currency_prefix') }}{{ number_format($plan['monthly']['recurring_amount'] / 100, 2) }}</option>
@@ -114,7 +114,7 @@
                     </select>
 
                     {{-- This is the main button that gets clicked to subscribe to a plan. It calls displayCreateSubscription(). --}}
-                    <x-payfast::secondary-button class="ml-2 align-middle h-9 mt-2" style="color: green;"
+                    <x-payfast::secondary-button class="ml-2 align-middle h-9 mt-2"
                         wire:click="displayCreateSubscription">
                         @if ($user->subscribed('default') && $user->subscription('default')->onGracePeriod())
                             {{ __('Resubscribe') }}
@@ -123,7 +123,7 @@
                         @endif
                     </x-payfast::secondary-button>
 
-                    <div wire:loading class="ml-2 align-middle mt-3">
+                    <div wire:loading class="ml-2 align-middle mt-3 text-gray-600 dark:text-gray-400">
                         Please wait...
                     </div>
 
@@ -172,20 +172,18 @@
                     <div class="flex space-x-3 space-y-3">
                         <x-payfast::secondary-button
                             wire:click="$toggle('confirmingCancelSubscription')"
-                            wire:loading.attr="disabled"
-                            style="color: green;">
+                            wire:loading.attr="disabled">
                             {{ __('Keep Subscription') }}
                         </x-payfast::secondary-button>
 
                         <x-payfast::secondary-button                    
                             wire:click="cancelSubscription"
                             wire:loading.attr="disabled"
-                            class="ml-5"
-                            style="color: red;">
+                            class="ml-5">
                             {{ __('Cancel Subscription') }}
                         </x-payfast::secondary-button>
 
-                        <div wire:loading class="text-center">
+                        <div wire:loading class="text-center text-gray-600 dark:text-gray-400">
                         Please wait...
                         </div>
                     </div>

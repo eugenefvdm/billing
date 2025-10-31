@@ -21,12 +21,6 @@ Install the package via composer:
 composer require fintechsystems/payfast-onsite-subscriptions
 ```
 
-If you don't have Sanctum already:
-
-```bash
-php artisan install:api
-```
-
 ## Publish Configuration and Views
 
 Publish the config file with:
@@ -67,15 +61,12 @@ class User extends Authenticatable
 ## In your header
 
 ```php
-@if (config('billing.payfast.test_mode'))
-    <!-- Payfast Test Mode -->
-    <script src="https://sandbox.payfast.co.za/onsite/engine.js" defer></script>
-@else
-    <script src="https://www.payfast.co.za/onsite/engine.js" defer></script>
-@endif
-
-@stack('payfast-event-listener')
+@payfastScripts
 ```
+
+If you're using Flux, add this to `/resources/views/partials/head.blade.php` some like below `@fluxAppearance`.
+
+This directive outputs the PayFast onsite payment script (test or production based on config) and includes the `payfast-event-listener` stack for payment events.
 
 To include the pricing component on a page, do this:
 
@@ -138,6 +129,17 @@ ngrok http https://myapp.test --host-header=rewrite --domain=ngrok-supplied-url.
 ## Livewire setup
 
 ### Views
+
+#### Flux
+
+`/resources/views/components/layouts/app/sidebar.blade.php`
+
+```html
+<flux:menu.radio.group>
+    <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>{{ __('Settings1') }}</flux:menu.item>
+    <flux:menu.item :href="route('settings.billing')" icon="cog" wire:navigate>{{ __('Billing') }}</flux:menu.item>                        
+</flux:menu.radio.group>
+```
 
 The Livewire views are modelled to blend into a [Laravel Jetstream](https://jetstream.laravel.com) user profile page.
 

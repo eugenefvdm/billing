@@ -46,7 +46,7 @@ class WebhookController extends Controller
 
         WebhookReceived::dispatch($payload);
 
-        ray("Checking what kind of webhook received...");
+        config('billing.payfast.debug') ?? Log::debug("Checking what kind of webhook received...");
 
         try {
             // Non subscription payment handling
@@ -64,7 +64,8 @@ class WebhookController extends Controller
 
             // New token received, so let's create a subscription
             if (! $this->findSubscription($payload['token'])) {
-                ray("New token received, so let's create a subscription");
+                config('billing.payfast.debug') ?? Log::debug("New token received, so let's create a subscription");
+
                 $this->createSubscription($payload);
 
                 WebhookHandled::dispatch([
@@ -148,15 +149,15 @@ class WebhookController extends Controller
 
     protected function createSubscription(array $payload)
     {
-        ray("create Subscription in webhook");
+        config('billing.payfast.debug') ?? Log::debug("create Subscription in webhook");
 
         $customer = $this->findOrCreateCustomer($payload);
 
         $subscription = $customer->subscriptions()->create([
             'name' => 'default',
             'provider_id' => $payload['token'],
-            'type' => $payload['custom_str2'], // 'monthly', 'yearly', etc.
-            'merchant_payment_id' => $payload['m_payment_id'],
+            'type' => $payload['custom_str2'], // Full plan identifier (e.g., '0|monthly')
+            // 'merchant_payment_id' => $payload['m_payment_id'],
             'status' => $payload['payment_status'],
             'next_bill_at' => $payload['billing_date'] ?? null, // This happens when subscription was never created but then cancelled
         ]);
@@ -286,6 +287,8 @@ class WebhookController extends Controller
      */
     private function findOrCreateCustomer(array $passthrough)
     {
+        config('billing.payfast.debug') ?? Log::debug("findOrCreateCustomer in webhook");
+
         if (! isset($passthrough['custom_str1'], $passthrough['custom_int1'])) {
             throw new InvalidMorphModelInPayload($passthrough['custom_str1'] . "|" . $passthrough['custom_int1']);
         }
@@ -293,9 +296,12 @@ class WebhookController extends Controller
         $customer = Cashier::$customerModel::firstOrCreate([
             'billable_id' => $passthrough['custom_int1'],
             'billable_type' => $passthrough['custom_str1'],
+        ], [
+            'name' => $passthrough['name_first'], // TODO due to a bug in sending we get name_first and name_last as the full name
+            'email' => $passthrough['email_address'],
         ])->billable;
 
-        ray("We found this customer", $customer);
+        config('billing.payfast.debug') ?? Log::debug("Found this customer", $customer);
 
         return $customer;
     }

@@ -6,6 +6,7 @@ use Eugenefvdm\Billing\Components\Banner;
 use Eugenefvdm\Billing\Components\Billing;
 use Eugenefvdm\Billing\Components\Receipts;
 use Eugenefvdm\Billing\Components\Subscriptions;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -34,6 +35,17 @@ class BillingServiceProvider extends ServiceProvider
         Livewire::component('banner', Banner::class);
 
         Livewire::component('billing', Billing::class);
+
+        Blade::directive('payfastScripts', function () {
+            return "<?php if (config('billing.payfast.test_mode')): ?>
+    <!-- Payfast Test Mode -->
+    <script src=\"https://sandbox.payfast.co.za/onsite/engine.js\" defer></script>
+<?php else: ?>
+    <script src=\"https://www.payfast.co.za/onsite/engine.js\" defer></script>
+<?php endif; ?>
+
+<?php echo \$__env->yieldPushContent('payfast-event-listener'); ?>";
+        });
     }
 
     public function register()

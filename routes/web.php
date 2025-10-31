@@ -16,6 +16,6 @@ Route::post('/payfast/notify', 'Eugenefvdm\Billing\Http\Controllers\WebhookContr
 
 Route::post('/payfast/webhook', 'Eugenefvdm\Billing\Http\Controllers\WebhookController');
 
-Route::middleware(['web', 'auth:sanctum', 'verified'])
-    ->get('/user/billing', Billing::class)
-    ->name('profile.billing');
+Route::middleware(['auth','web'])
+    ->get('/settings/billing', Billing::class)
+    ->name('settings.billing');

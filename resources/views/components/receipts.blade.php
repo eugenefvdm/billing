@@ -9,9 +9,9 @@
     </x-slot>
 
     <x-slot name="content">
-        <div class="text-gray-600">
+        <div class="text-gray-600 dark:text-gray-400">
             <table width="100%" class="table-auto">
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-50 dark:bg-zinc-700">
                     <tr>
                         <td nowrap><strong>ID</strong></th>
                         <td><strong>Item</strong></td>
@@ -22,7 +22,7 @@
                 </thead>
                 <tbody>
                     @foreach($receipts as $receipt)
-                        <tr class="odd:bg-white even:bg-gray-50">
+                        <tr class="odd:bg-white odd:dark:bg-zinc-800 even:bg-gray-50 even:dark:bg-zinc-700">
                             <td>{{ $receipt->payfast_payment_id }}</td>
                             <td>{{ $receipt->item_name }}</td>
                             <td style="text-align:right">R {{ $receipt->amount_gross }}</td>

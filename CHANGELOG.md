@@ -7,6 +7,7 @@ All notable changes to `billing` will be documented in this file.
 - Removed PHP CS Fixer
 - Renamed config('payfast') to config('billing')
 - Added payfast to billing.payfast so layer the Payfast variables lower down
+- Fixed "Undefined array key" error in subscriptions view by using `type` field instead of `plan`
 
 ## [v4.0] 2025-10-30
 
