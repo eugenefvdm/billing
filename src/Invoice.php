@@ -83,7 +83,7 @@ class Invoice extends Model
             return 0;
         }
 
-        return now()->diffInDays($this->due_at);
+        return abs(now()->diffInDays($this->due_at));
     }
 
     /**
@@ -135,7 +135,7 @@ class Invoice extends Model
      */
     public function pdfPath(): string
     {
-        $path = config('billing.invoice.pdf_storage_path');
+        $path = config('billing.invoice.pdf_path');
         return storage_path("app/{$path}/invoice-{$this->id}.pdf");
     }
 

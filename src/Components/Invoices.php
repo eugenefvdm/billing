@@ -12,11 +12,16 @@ class Invoices extends Component
 
     public $invoices;
 
-    protected $listeners = ['refreshComponent' => '$refresh'];
+    protected $listeners = ['refreshComponent' => 'refreshInvoices'];
 
     public function mount()
     {
         $this->user = Auth::user();
+    }
+
+    public function refreshInvoices()
+    {
+        $this->user->refresh();
     }
 
     /**

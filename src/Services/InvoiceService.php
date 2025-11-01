@@ -2,9 +2,11 @@
 
 namespace Eugenefvdm\Billing\Services;
 
+use Barryvdh\DomPDF\Facade\Pdf;
 use Eugenefvdm\Billing\Enums\InvoiceStatus;
 use Eugenefvdm\Billing\Invoice;
 use Eugenefvdm\Billing\Subscription;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class InvoiceService
@@ -15,7 +17,13 @@ class InvoiceService
     public static function createSubscriptionInvoice(Subscription $subscription): Invoice
     {
         $plan = $subscription->plan();
-        $interval = $subscription->type; // 'monthly' or 'yearly'
+        
+        // Extract interval from type (format: "0|monthly" or "1|yearly")
+        $interval = $subscription->type;
+        if (strpos($interval, '|') !== false) {
+            [, $interval] = explode('|', $interval);
+        }
+        
         $amount = $plan[$interval]['recurring_amount']; // cents
 
         $dueAt = now()->addDays(config('billing.invoice.default_due_days', 7));
@@ -44,23 +52,79 @@ class InvoiceService
      */
     public static function createPdf(Invoice $invoice, bool $stream = false)
     {
-        $pdf = app('dompdf.wrapper')->loadView('billing::pdf.invoice', [
-            'invoice' => $invoice,
+        Log::info("InvoiceService::createPdf called", [
+            'invoice_id' => $invoice->id,
+            'invoice_uuid' => $invoice->uuid,
+            'stream' => $stream,
         ]);
 
-        if ($stream) {
-            return $pdf->stream("Invoice-{$invoice->id}.pdf");
+        try {
+            $pdf = Pdf::loadView('billing::pdf.invoice', [
+                'invoice' => $invoice,
+            ]);
+            
+            Log::info("PDF loaded successfully", [
+                'invoice_id' => $invoice->id,
+            ]);
+
+            if ($stream) {
+                Log::info("Streaming PDF", [
+                    'invoice_id' => $invoice->id,
+                    'filename' => "Invoice-{$invoice->id}.pdf",
+                ]);
+                return $pdf->stream("Invoice-{$invoice->id}.pdf");
+            }
+
+            // Ensure storage directory exists
+            $directory = dirname($invoice->pdfPath());
+            if (!file_exists($directory)) {
+                mkdir($directory, 0755, true);
+                Log::info("Created PDF directory", [
+                    'directory' => $directory,
+                ]);
+            }
+
+            $pdf->save($invoice->pdfPath());
+            
+            Log::info("PDF saved successfully", [
+                'invoice_id' => $invoice->id,
+                'path' => $invoice->pdfPath(),
+            ]);
+
+            return $pdf;
+        } catch (\Exception $e) {
+            Log::error("Error in InvoiceService::createPdf", [
+                'invoice_id' => $invoice->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Check if an overdue reminder must be sent for an invoice.
+     * Returns 'first', 'second', 'third', or false if no reminder should be sent.
+     */
+    public static function checkIfOverdueReminderMustBeSent(Invoice $invoice): string|bool
+    {
+        if (!$invoice->isOverdue()) {
+            return false;
         }
 
-        // Ensure storage directory exists
-        $directory = dirname($invoice->pdfPath());
-        if (!file_exists($directory)) {
-            mkdir($directory, 0755, true);
+        if ($invoice->in_first_reminder_period) {
+            return 'first';
         }
 
-        $pdf->save($invoice->pdfPath());
+        if ($invoice->in_second_reminder_period) {
+            return 'second';
+        }
 
-        return $pdf;
+        if ($invoice->in_third_reminder_period) {
+            return 'third';
+        }
+
+        return false;
     }
 }
 

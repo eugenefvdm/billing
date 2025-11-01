@@ -47,16 +47,27 @@
                                 <x-payfast::secondary-button 
                                     href="{{ route('invoices.show', $invoice->uuid) }}"
                                     target="_blank"
-                                    class="text-sm">
+                                    class="text-sm"
+                                    onclick="console.log('View button clicked', {uuid: '{{ $invoice->uuid }}', href: '{{ route('invoices.show', $invoice->uuid) }}'}); window.open('{{ route('invoices.show', $invoice->uuid) }}', '_blank'); return false;">
                                     {{ __('View') }}
                                 </x-payfast::secondary-button>
                                 
                                 <x-payfast::secondary-button 
                                     href="{{ route('invoices.download', $invoice->uuid) }}"
-                                    class="text-sm">
-                                    {{ __('Download PDF') }}
+                                    class="text-sm"
+                                    onclick="console.log('Download button clicked', {uuid: '{{ $invoice->uuid }}', href: '{{ route('invoices.download', $invoice->uuid) }}'}); window.location.href = '{{ route('invoices.download', $invoice->uuid) }}'; return false;">
+                                    {{ __('Download') }}
                                 </x-payfast::secondary-button>
                             </div>
+                            
+                            <script>
+                                console.log('Invoice buttons rendered', {
+                                    viewUrl: '{{ route('invoices.show', $invoice->uuid) }}',
+                                    downloadUrl: '{{ route('invoices.download', $invoice->uuid) }}',
+                                    invoiceId: {{ $invoice->id }},
+                                    invoiceUuid: '{{ $invoice->uuid }}'
+                                });
+                            </script>
                         </div>
                         
                         @if(!$invoice->isPaid())

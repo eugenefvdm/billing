@@ -56,16 +56,6 @@ return [
         ],
     ],
 
-    'invoice' => [
-        'default_due_days' => env('INVOICE_DEFAULT_DUE_DAYS', 7),
-        'pdf_storage_path' => env('INVOICE_PDF_PATH', 'invoices'),
-        'reminders' => [
-            'first_overdue_notice' => env('INVOICE_FIRST_OVERDUE_NOTICE', 3),
-            'second_overdue_notice' => env('INVOICE_SECOND_OVERDUE_NOTICE', 6),
-            'third_overdue_notice' => env('INVOICE_THIRD_OVERDUE_NOTICE', 9),
-        ],
-    ],
-
     'payfast' => [
         'merchant_id' => env('PAYFAST_MERCHANT_ID'),
         'merchant_key' => env('PAYFAST_MERCHANT_KEY'),
@@ -79,6 +69,28 @@ return [
         'return_url' => env('PAYFAST_RETURN_URL', '/payfast/return'),
         'cancel_url' => env('PAYFAST_CANCEL_URL', '/payfast/cancel'),
         'notify_url' => env('PAYFAST_NOTIFY_URL', '/payfast/notify'),        
-    ]
+    ],
+
+    'eft' => [
+        'bank_name' => env('BANK_NAME'),
+        'bank_account_number' => env('BANK_ACCOUNT_NUMBER'),
+        'bank_account_type' => env('BANK_ACCOUNT_TYPE', 'Cheque'),
+        'bank_branch_code' => env('BANK_BRANCH_CODE'),
+    ],
+
+    'invoice' => [
+        'default_due_days' => env('INVOICE_DEFAULT_DUE_DAYS', 7),
+        'pdf_path' => env('INVOICE_PDF_PATH', 'invoices'),
+        'company_name' => env('INVOICE_COMPANY_NAME', config('app.name')),
+        'company_address' => env('INVOICE_COMPANY_ADDRESS'),
+        'company_city' => env('INVOICE_COMPANY_CITY'),
+        'company_phone' => env('INVOICE_COMPANY_PHONE'),
+        'company_email' => env('INVOICE_COMPANY_EMAIL', env('MAIL_FROM_ADDRESS')),
+        'reminders' => [
+            'first_overdue_notice' => env('INVOICE_FIRST_OVERDUE_NOTICE', 3),
+            'second_overdue_notice' => env('INVOICE_SECOND_OVERDUE_NOTICE', 6),
+            'third_overdue_notice' => env('INVOICE_THIRD_OVERDUE_NOTICE', 9),
+        ],
+    ],
 
 ];

@@ -45,12 +45,18 @@
                     </div>
                 @endif
             @else
-                @if ($user->subscription('default')->onGracePeriod())
+                @php
+                    $subscription = $user->subscription('default');
+                    $isEft = $subscription->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
+                    $isCancelled = !is_null($subscription->cancelled_at);
+                    $isOnGracePeriod = $isCancelled && $subscription->onGracePeriod();
+                @endphp
+                @if ($isOnGracePeriod)
                     {{-- Grace period --}}
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                         Your subscription was cancelled
-                        @if($user->subscription('default')->cancelled_at)
-                            {{ $user->subscription('default')->cancelled_at->format('j F Y \a\t H:i:s') }}
+                        @if($subscription->cancelled_at)
+                            {{ $subscription->cancelled_at->format('j F Y \a\t H:i:s') }}
                         @endif
                         .
                     </h3>
@@ -58,9 +64,9 @@
                         @if (\Carbon\Carbon::now()->diffInDays($user->subscriptions()->active()->first()->ends_at->format('Y-m-d')) != 0)
                             <p>
                                 There are
-                                {{ (int) \Carbon\Carbon::now()->diffInDays($user->subscription('default')->ends_at) }}
+                                {{ (int) \Carbon\Carbon::now()->diffInDays($subscription->ends_at) }}
                                 days left of your subscription and the last day is the
-                                {{ $user->subscription('default')->ends_at->format('jS \o\f F Y') }}.
+                                {{ $subscription->ends_at->format('jS \o\f F Y') }}.
                             </p>
                         @else
                             <p>
@@ -71,8 +77,6 @@
                 @else
                     {{-- Subscribed --}}
                     @php
-                        $subscription = $user->subscription('default');
-                        $isEft = $subscription->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
                         $planName = $subscription->planName();
                         // Parse interval from type field (format: "0|monthly" or "1|yearly")
                         $interval = strpos($subscription->type, '|') !== false 
@@ -104,21 +108,24 @@
 
         <!-- Subscription Action Buttons -->
         <div class="mt-5">
-            {{-- @if ($user->subscribed('default') && !$user->onGenericTrial() && !$user->subscription('default')->onGracePeriod())                             --}}
-            @if ($user->subscribed('default') && !$user->subscription('default')->onGracePeriod())
+            @if ($user->subscribed('default'))
                 @php
                     $subscription = $user->subscription('default');
                     $isEft = $subscription->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
+                    $isCancelled = !is_null($subscription->cancelled_at);
+                    $isOnGracePeriod = $isCancelled && $subscription->onGracePeriod();
                 @endphp
-                @if(!$isEft)
+                @if (!$isOnGracePeriod)
+                    @if(!$isEft)
                     <x-payfast::secondary-button wire:click="updateCard">
                         {{ __('Update Card Information') }}
                     </x-payfast::secondary-button>
                 @endif
 
-                <x-payfast::secondary-button wire:click="confirmCancelSubscription" wire:loading.attr="disabled">
-                    {{ __('Cancel Subscription') }}
-                </x-payfast::secondary-button>
+                    <x-payfast::secondary-button wire:click="confirmCancelSubscription" wire:loading.attr="disabled">
+                        {{ __('Cancel Subscription') }}
+                    </x-payfast::secondary-button>
+                @endif
             @else
                 @php
                     ray($user)->green();
@@ -164,7 +171,12 @@
                         {{-- This is the main button that gets clicked to subscribe to a plan. It calls displayCreateSubscription(). --}}
                         <x-payfast::secondary-button class="ml-2 align-middle h-9 mt-2"
                             wire:click="displayCreateSubscription">
-                            @if ($user->subscribed('default') && $user->subscription('default')->onGracePeriod())
+                            @php
+                                $showResubscribe = $user->subscribed('default') && 
+                                    !is_null($user->subscription('default')->cancelled_at) && 
+                                    $user->subscription('default')->onGracePeriod();
+                            @endphp
+                            @if ($showResubscribe)
                                 {{ __('Resubscribe') }}
                             @else
                                 {{ __('Subscribe') }}

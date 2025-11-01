@@ -20,14 +20,16 @@
 
             @php
                 $user = Auth()->user();
-                $hasEftSubscription = $user->subscription('default')?->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
+                $subscription = $user->subscription('default');
+                $hasEftSubscription = $subscription?->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
+                $hasCardSubscription = $subscription?->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Card;
                 $hasEftInvoices = $user->invoices()
                     ->whereHas('subscription', fn($q) => 
                         $q->where('payment_method', \Eugenefvdm\Billing\Enums\PaymentMethod::Eft)
                     )
                     ->exists();
                 $showInvoices = $hasEftSubscription || $hasEftInvoices;
-                $showReceipts = !$hasEftSubscription;
+                $showReceipts = $subscription && $hasCardSubscription;
             @endphp
 
             @if($showInvoices)

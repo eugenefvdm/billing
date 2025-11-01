@@ -43,6 +43,7 @@ class Subscriptions extends Component
      */
     public function billingWasUpdated()
     {
+        $this->user->refresh();
         $this->dispatch('refreshComponent')->to('receipts');
         $this->dispatch('refreshComponent')->to('invoices');
 
@@ -62,12 +63,28 @@ class Subscriptions extends Component
 
     public function cancelSubscription(): void
     {
-        Payfast::debug('Cancelling subscription for ' . $this->user->subscriptions()->active()->first()->provider_id, 'warning');
+        $subscription = $this->user->subscription('default');
+        
+        // Handle EFT subscriptions differently (no Payfast API call needed)
+        if ($subscription->payment_method === PaymentMethod::Eft) {
+            // For EFT subscriptions, cancel at the end of the current billing period
+            $endsAt = $subscription->ends_at ?? now();
+            
+            $subscription->forceFill([
+                'status' => Subscription::Deleted,
+                'ends_at' => $endsAt,
+                'cancelled_at' => now(),
+            ])->save();
+            
+            Log::info("Cancelled EFT subscription {$subscription->id} for user {$this->user->id}");
+        } else {
+            // Handle Payfast subscriptions (existing flow)
+            Payfast::debug('Cancelling subscription for ' . $subscription->provider_id, 'warning');
+            $subscription->cancel2();
+        }
 
-        $this->user->subscription('default')->cancel2();
-
+        $this->user->refresh();
         $this->dispatch('billingUpdated');
-
         $this->confirmingCancelSubscription = false;
     }
 
@@ -209,7 +226,7 @@ class Subscriptions extends Component
         // Create EFT subscription
         $subscription = $this->user->subscriptions()->create([
             'name' => 'default',
-            'type' => $interval,
+            'type' => $this->type, // Store full format "0|monthly" for consistency
             'payment_method' => PaymentMethod::Eft,
             'status' => Subscription::Active,
             'start_date' => $startsAt,
@@ -227,6 +244,9 @@ class Subscriptions extends Component
             ->send(new \Eugenefvdm\Billing\Mail\InvoiceCreated($invoice));
 
         Log::info("Created EFT subscription {$subscription->id} with invoice {$invoice->id} for user {$this->user->id}");
+
+        // Refresh user to get latest subscription data
+        $this->user->refresh();
 
         // Refresh components
         $this->dispatch('billingUpdated');

@@ -100,10 +100,24 @@
     <div class="header">
         <h1>INVOICE</h1>
         <div class="company-details">
-            <strong>{{ config('app.name') }}</strong><br>
-            [Your Company Address]<br>
-            [City, Province, Postal Code]<br>
-            [Phone Number] | [Email Address]
+            <strong>{{ config('billing.invoice.company_name') }}</strong><br>
+            @if(config('billing.invoice.company_address'))
+                {{ config('billing.invoice.company_address') }}<br>
+            @endif
+            @if(config('billing.invoice.company_city'))
+                {{ config('billing.invoice.company_city') }}<br>
+            @endif
+            @if(config('billing.invoice.company_phone') || config('billing.invoice.company_email'))
+                @if(config('billing.invoice.company_phone'))
+                    {{ config('billing.invoice.company_phone') }}
+                @endif
+                @if(config('billing.invoice.company_phone') && config('billing.invoice.company_email'))
+                    | 
+                @endif
+                @if(config('billing.invoice.company_email'))
+                    {{ config('billing.invoice.company_email') }}
+                @endif
+            @endif
         </div>
     </div>
 
@@ -112,11 +126,11 @@
             <tr>
                 <td style="width: 50%;">
                     <strong>Invoice #:</strong> {{ $invoice->id }}<br>
-                    <strong>Issued:</strong> {{ $invoice->issued_at->format('F j, Y') }}
+                    <strong>Issued:</strong> {{ $invoice->issued_at->translatedFormat('F j, Y') }}
                 </td>
                 <td style="width: 50%; text-align: right;">
                     <strong>Due Date:</strong><br>
-                    <span class="due-date">{{ $invoice->due_at->format('F j, Y') }}</span>
+                    <span class="due-date">{{ $invoice->due_at->translatedFormat('F j, Y') }}</span>
                 </td>
             </tr>
         </table>
@@ -177,26 +191,26 @@
         </table>
     </div>
 
-    @if($invoice->subscription && $invoice->subscription->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft)
+    @if(!$invoice->isPaid() && $invoice->subscription && $invoice->subscription->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft)
     <div class="payment-instructions">
         <h3>Payment Instructions</h3>
         <p>Please make payment via EFT to the following account:</p>
         <table style="width: 100%; margin-top: 10px;">
             <tr>
                 <td><strong>Bank:</strong></td>
-                <td>[Your Bank Name]</td>
+                <td>{{ config('billing.eft.bank_name') }}</td>
             </tr>
             <tr>
                 <td><strong>Account Number:</strong></td>
-                <td>[Your Account Number]</td>
+                <td>{{ config('billing.eft.bank_account_number') }}</td>
             </tr>
             <tr>
                 <td><strong>Account Type:</strong></td>
-                <td>[Checking/Savings]</td>
+                <td>{{ config('billing.eft.bank_account_type') }}</td>
             </tr>
             <tr>
                 <td><strong>Branch Code:</strong></td>
-                <td>[Your Branch Code]</td>
+                <td>{{ config('billing.eft.bank_branch_code') }}</td>
             </tr>
             <tr>
                 <td><strong>Payment Reference:</strong></td>
