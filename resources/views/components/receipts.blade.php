@@ -5,7 +5,7 @@
     </x-slot>
 
     <x-slot name="description">
-        {{ __('A list of credit card receipts.') }}
+        {{ __('Credit card and payment receipts.') }}
     </x-slot>
 
     <x-slot name="content">

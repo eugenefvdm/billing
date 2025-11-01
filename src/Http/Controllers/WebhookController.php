@@ -13,6 +13,7 @@ use Eugenefvdm\Billing\Events\WebhookReceived;
 use Eugenefvdm\Billing\Exceptions\InvalidMorphModelInPayload;
 use Eugenefvdm\Billing\Exceptions\MissingSubscription;
 use Eugenefvdm\Billing\Facades\Payfast;
+use Eugenefvdm\Billing\Invoice;
 use Eugenefvdm\Billing\Payment;
 use Eugenefvdm\Billing\Receipt;
 use Eugenefvdm\Billing\Subscription;
@@ -137,6 +138,26 @@ class WebhookController extends Controller
             'billable_type' => $payload['custom_str1'],
             'received_at' => now(),
         ]);
+
+        // Check if this is an invoice payment
+        if (isset($payload['custom_str3']) && str_starts_with($payload['custom_str3'], 'invoice:')) {
+            $invoiceUuid = str_replace('invoice:', '', $payload['custom_str3']);
+            
+            $invoice = Invoice::where('uuid', $invoiceUuid)->first();
+            
+            if ($invoice && !$invoice->isPaid() && $payload['payment_status'] === 'COMPLETE') {
+                Log::info("Marking invoice #{$invoice->id} as paid via Payfast payment");
+                
+                // Mark invoice as paid
+                $invoice->markAsPaid();
+                
+                Log::info("Invoice #{$invoice->id} has been marked as paid");
+            } elseif ($invoice && $invoice->isPaid()) {
+                Log::warning("Invoice #{$invoice->id} payment received but invoice is already marked as paid");
+            } elseif (!$invoice) {
+                Log::warning("Invoice payment received but invoice UUID {$invoiceUuid} not found");
+            }
+        }
 
         PaymentSucceeded::dispatch($receipt, $payload);
 

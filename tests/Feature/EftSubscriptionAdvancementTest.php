@@ -267,6 +267,233 @@ test('advancing multiple times when paying invoices in sequence', function () {
     expect($subscription->ends_at->format('Y-m-d'))->toBe($expectedDate2->format('Y-m-d'));
 });
 
+test('advancing yearly subscription period when paying invoice for current period that has ended', function () {
+    $user = $this->createBillable();
+    
+    // Create EFT subscription with period that ended yesterday
+    $subscription = $user->subscriptions()->create([
+        'name' => 'default',
+        'type' => '0|yearly',
+        'payment_method' => PaymentMethod::Eft,
+        'status' => Subscription::Active,
+        'ends_at' => Carbon::yesterday(),
+    ]);
+
+    // Create invoice for the period that just ended
+    $invoice = InvoiceService::createSubscriptionInvoice($subscription);
+    
+    // Verify invoice was created with correct period
+    expect($invoice->subscription_id)->toBe($subscription->id);
+    
+    $oldEndsAt = $subscription->ends_at->copy();
+    
+    // Mark invoice as paid - should advance subscription
+    $invoice->markAsPaid();
+    
+    // Refresh subscription
+    $subscription->refresh();
+    
+    // Subscription should have advanced by one year
+    expect($subscription->ends_at->format('Y-m-d'))
+        ->toBe($oldEndsAt->addYear()->format('Y-m-d'));
+});
+
+test('not advancing yearly subscription when paying invoice for future period', function () {
+    $user = $this->createBillable();
+    
+    // Create EFT subscription with period ending in the future
+    $subscription = $user->subscriptions()->create([
+        'name' => 'default',
+        'type' => '0|yearly',
+        'payment_method' => PaymentMethod::Eft,
+        'status' => Subscription::Active,
+        'ends_at' => Carbon::now()->addYear(),
+    ]);
+
+    // Manually create invoice for a future period
+    $futureEnd = Carbon::now()->addYears(2);
+    $futureStart = $futureEnd->copy()->subYear();
+    
+    $invoice = $user->invoices()->create([
+        'subscription_id' => $subscription->id,
+        'uuid' => \Illuminate\Support\Str::uuid(),
+        'status' => InvoiceStatus::Unpaid,
+        'issued_at' => now(),
+        'due_at' => now()->addDays(7),
+        'currency' => 'ZAR',
+    ]);
+    
+    // Add invoice item with future period description
+    $invoice->items()->create([
+        'description' => "Startup Plan {$futureStart->format('Y-m-d')} to {$futureEnd->format('Y-m-d')}",
+        'quantity' => 1,
+        'unit_price' => 69000,
+    ]);
+    
+    $originalEndsAt = $subscription->ends_at->copy();
+    
+    // Mark invoice as paid - should NOT advance subscription
+    $invoice->markAsPaid();
+    
+    // Refresh subscription
+    $subscription->refresh();
+    
+    // Subscription should NOT have advanced
+    expect($subscription->ends_at->format('Y-m-d'))
+        ->toBe($originalEndsAt->format('Y-m-d'));
+});
+
+test('not advancing yearly subscription when paying invoice for current period that has not ended yet', function () {
+    $user = $this->createBillable();
+    
+    // Create EFT subscription with period ending in the future
+    $subscription = $user->subscriptions()->create([
+        'name' => 'default',
+        'type' => '0|yearly',
+        'payment_method' => PaymentMethod::Eft,
+        'status' => Subscription::Active,
+        'ends_at' => Carbon::now()->addDays(10), // Period hasn't ended yet
+    ]);
+
+    // Create invoice for current period (matches subscription period)
+    $invoice = InvoiceService::createSubscriptionInvoice($subscription);
+    
+    $originalEndsAt = $subscription->ends_at->copy();
+    
+    // Mark invoice as paid - should NOT advance subscription (period hasn't ended)
+    $invoice->markAsPaid();
+    
+    // Refresh subscription
+    $subscription->refresh();
+    
+    // Subscription should NOT have advanced (period hasn't ended)
+    expect($subscription->ends_at->format('Y-m-d'))
+        ->toBe($originalEndsAt->format('Y-m-d'));
+});
+
+test('not advancing yearly subscription when current period has not ended and invoice does not match', function () {
+    $user = $this->createBillable();
+    
+    // Create EFT subscription with period ending in the future
+    $subscription = $user->subscriptions()->create([
+        'name' => 'default',
+        'type' => '0|yearly',
+        'payment_method' => PaymentMethod::Eft,
+        'status' => Subscription::Active,
+        'ends_at' => Carbon::now()->addDays(10), // Period hasn't ended yet
+    ]);
+
+    // Create invoice for a different period (doesn't match)
+    $invoice = $user->invoices()->create([
+        'subscription_id' => $subscription->id,
+        'uuid' => \Illuminate\Support\Str::uuid(),
+        'status' => InvoiceStatus::Unpaid,
+        'issued_at' => now(),
+        'due_at' => now()->addDays(7),
+        'currency' => 'ZAR',
+    ]);
+    
+    // Add invoice item with period that doesn't match subscription
+    $invoice->items()->create([
+        'description' => "Startup Plan 2024-01-01 to 2025-01-01", // Different period
+        'quantity' => 1,
+        'unit_price' => 69000,
+    ]);
+    
+    $originalEndsAt = $subscription->ends_at->copy();
+    
+    // Mark invoice as paid - should NOT advance subscription
+    $invoice->markAsPaid();
+    
+    // Refresh subscription
+    $subscription->refresh();
+    
+    // Subscription should NOT have advanced (period hasn't ended AND invoice doesn't match)
+    expect($subscription->ends_at->format('Y-m-d'))
+        ->toBe($originalEndsAt->format('Y-m-d'));
+});
+
+test('not advancing yearly subscription when invoice period does not match subscription period', function () {
+    $user = $this->createBillable();
+    
+    // Create EFT subscription with period ending Nov 1 (in the past)
+    $subscription = $user->subscriptions()->create([
+        'name' => 'default',
+        'type' => '0|yearly',
+        'payment_method' => PaymentMethod::Eft,
+        'status' => Subscription::Active,
+        'ends_at' => Carbon::parse('2025-11-01'),
+    ]);
+
+    // Manually create invoice for a completely different period
+    // We need an invoice that ends at a different date
+    $invoice = $user->invoices()->create([
+        'subscription_id' => $subscription->id,
+        'uuid' => \Illuminate\Support\Str::uuid(),
+        'status' => InvoiceStatus::Unpaid,
+        'issued_at' => now(),
+        'due_at' => now()->addDays(7),
+        'currency' => 'ZAR',
+    ]);
+    
+    // Add invoice item with period that doesn't match subscription
+    // Invoice ends Oct 15, but subscription ends Nov 1 - they don't match
+    $invoice->items()->create([
+        'description' => "Startup Plan 2024-10-15 to 2025-10-15", // Different period end
+        'quantity' => 1,
+        'unit_price' => 69000,
+    ]);
+    
+    // Mark invoice as paid - should NOT advance subscription (period mismatch)
+    $invoice->markAsPaid();
+    
+    // Refresh subscription
+    $subscription->refresh();
+    
+    // Subscription should NOT have advanced (period doesn't match)
+    expect($subscription->ends_at->format('Y-m-d'))
+        ->toBe('2025-11-01');
+});
+
+test('advancing yearly subscription multiple times when paying invoices in sequence', function () {
+    $user = $this->createBillable();
+    
+    // Use a fixed past date to ensure it's always in the past
+    $pastDate = Carbon::parse('2024-01-01');
+    
+    // Create EFT subscription with period ending in the past
+    $subscription = $user->subscriptions()->create([
+        'name' => 'default',
+        'type' => '0|yearly',
+        'payment_method' => PaymentMethod::Eft,
+        'status' => Subscription::Active,
+        'ends_at' => $pastDate->copy(),
+    ]);
+
+    // Create and pay first invoice
+    // This will create invoice for period ending at $pastDate, matching subscription
+    $invoice1 = InvoiceService::createSubscriptionInvoice($subscription);
+    $invoice1->markAsPaid();
+    
+    $subscription->refresh();
+    // Should advance by one year from Jan 1 2024 to Jan 1 2025
+    $expectedDate1 = $pastDate->copy()->addYear();
+    expect($subscription->ends_at->format('Y-m-d'))->toBe($expectedDate1->format('Y-m-d'));
+    
+    // Set period to past again (Jan 1 2025 minus 1 day = Dec 31 2024)
+    $subscription->update(['ends_at' => $expectedDate1->copy()->subDay()]);
+    
+    // Create and pay second invoice
+    // This will create invoice for period ending Jan 1 2025, matching subscription's Dec 31 2024 (within tolerance)
+    $invoice2 = InvoiceService::createSubscriptionInvoice($subscription);
+    $invoice2->markAsPaid();
+    
+    $subscription->refresh();
+    // Should advance from Dec 31 2024 to Dec 31 2025 (one year)
+    $expectedDate2 = $expectedDate1->copy()->subDay()->addYear();
+    expect($subscription->ends_at->format('Y-m-d'))->toBe($expectedDate2->format('Y-m-d'));
+});
+
 test('invoice getPeriodEndDate extracts end date correctly', function () {
     $user = $this->createBillable();
     

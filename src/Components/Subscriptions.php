@@ -242,7 +242,7 @@ class Subscriptions extends Component
             ->count();
 
         if ($outstandingInvoices > 0) {
-            $this->addError('paymentMethod', 'You have an outstanding invoice.');
+            $this->addError('paymentMethod', 'Please pay the outstanding invoice first.');
             Log::info("Attempted to create EFT subscription for user {$this->user->id} but there are {$outstandingInvoices} outstanding invoices");
             return;
         }

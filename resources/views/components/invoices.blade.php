@@ -5,7 +5,7 @@
     </x-slot>
 
     <x-slot name="description">
-        {{ __('Your EFT invoices and payment status.') }}
+        {{ __('EFT invoices and payment status.') }}
     </x-slot>
 
     <x-slot name="content">
@@ -33,11 +33,11 @@
                                     </h4>
                                     @if($invoice->isPaid())
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                                            Paid: {{ $invoice->paid_at->translatedFormat('j F Y') }}
+                                            Paid: {{ $invoice->paid_at->translatedFormat('j M Y') }}
                                         </span>
                                     @else
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
-                                            Due: {{ $invoice->due_at->translatedFormat('j F Y') }}
+                                            Due: {{ $invoice->due_at->translatedFormat('j M Y') }}
                                         </span>
                                     @endif
                                 </div>
@@ -47,6 +47,14 @@
                             </div>
                             
                             <div class="flex gap-2">
+                                @if(!$invoice->isPaid())
+                                    <x-billing::primary-button 
+                                        href="{{ route('invoices.pay', $invoice->uuid) }}"
+                                        class="text-sm">
+                                        {{ __('Pay') }}
+                                    </x-billing::primary-button>
+                                @endif
+                                
                                 <x-billing::secondary-button 
                                     href="{{ route('invoices.show', $invoice->uuid) }}"
                                     target="_blank"

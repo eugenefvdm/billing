@@ -29,29 +29,35 @@ class Payfast implements BillingProvider
 
         // TODO There is bad coding with overlap of return URLs and how prepend
         // is used. This needs to be refactored.
-        $prependUrl = "";
+        $prependCallbackUrl = "";
+        $prependWebhookUrl = "";
 
         if ($this->test_mode) {
             $this->merchant_id = $client['merchant_id_test'];
             $this->merchant_key = $client['merchant_key_test'];
             $this->passphrase = $client['passphrase_test'];
             $this->url = 'https://sandbox.payfast.co.za​/onsite/process';
-            $prependUrl = config('billing.payfast.test_mode_callback_url');
+            $prependCallbackUrl = config('billing.payfast.test_mode_callback_url', config('app.url'));
+            $prependWebhookUrl = config('billing.payfast.test_mode_webhook_url', config('app.url'));
         } else {
             $this->merchant_id = $client['merchant_id'];
             $this->merchant_key = $client['merchant_key'];
             $this->passphrase = $client['passphrase'];
             $this->url = 'https://www.payfast.co.za/onsite/process';
-            $prependUrl = config('billing.payfast.callback_url');
+            $prependCallbackUrl = config('billing.payfast.callback_url', config('app.url'));
+            $prependWebhookUrl = config('billing.payfast.webhook_url', config('app.url'));
         }
 
         if (config('billing.payfast.debug') == true) {
             //            Log::debug("In Payfast API constructor, test_mode: $this->test_mode, URL: $this->url");
         }
 
-        $this->returnUrl = $prependUrl . $client['return_url'];
-        $this->cancelUrl = $prependUrl . $client['cancel_url'];
-        $this->notifyUrl = $prependUrl . $client['notify_url'];
+        // Return and cancel URLs use callback URL (APP_URL)
+        $this->returnUrl = $prependCallbackUrl . $client['return_url'];
+        $this->cancelUrl = $prependCallbackUrl . $client['cancel_url'];
+        
+        // Notify URL (webhook) uses webhook URL (ngrok in test mode)
+        $this->notifyUrl = $prependWebhookUrl . $client['notify_url'];
 
         $this->urlCollection = [
             'return_url' => $this->returnUrl,
@@ -323,7 +329,8 @@ class Payfast implements BillingProvider
      */
     public function getPlanDetail($plan): array
     {
-        ray("getPlanDetail is called with this plan: $plan");
+        config('billing.debug') ?? Log::debug("getPlanDetail is called with this plan: $plan");
+        
         list($planId, $frequency) = explode('|', $plan);
 
         ray($planId);

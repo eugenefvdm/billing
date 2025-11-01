@@ -56,9 +56,9 @@ class Banner extends Component
                     $message = "Today is the last day of your subscription.";
                 }
             } else {
-                $message = "You are subscribed to the "
+                $message = "You are subscribed to "
                         . config('billing.billables.user.plans')[explode('|', $user->subscription('default')->type)[0]]['name']
-                        . ' ' . ucfirst(explode('|', $user->subscription('default')->type)[1]) . " plan.";
+                        . ' ' . ucfirst(explode('|', $user->subscription('default')->type)[1]) . ".";
             }
         }
 

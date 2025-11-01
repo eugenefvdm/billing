@@ -10,7 +10,7 @@ use Eugenefvdm\Billing\InvoiceItem;
 use Eugenefvdm\Billing\Services\InvoiceService;
 use Eugenefvdm\Billing\Subscription;
 
-test('EFT subscription shows paid up to date from latest paid invoice', function () {
+it('shows the paid up to date from the latest paid invoice for an EFT subscription', function () {
     $user = $this->createBillable();
     
     // Create EFT subscription
@@ -41,7 +41,7 @@ test('EFT subscription shows paid up to date from latest paid invoice', function
     expect($paidUpToInfo['message'])->toBe('You are paid up to: 1st of December 2025');
 });
 
-test('EFT subscription shows paid up to date from most recent paid invoice when multiple paid invoices exist', function () {
+it('shows the paid up to date from the most recent paid invoice when multiple paid invoices exist for an EFT subscription', function () {
     $user = $this->createBillable();
     
     // Create EFT subscription
@@ -81,7 +81,7 @@ test('EFT subscription shows paid up to date from most recent paid invoice when 
     expect($paidUpToInfo['message'])->toBe('You are paid up to: 1st of January 2026');
 });
 
-test('EFT subscription shows current period ends when no invoices are paid', function () {
+it('shows the current period end when no invoices are paid for an EFT subscription', function () {
     $user = $this->createBillable();
     
     // Create EFT subscription
@@ -103,7 +103,7 @@ test('EFT subscription shows current period ends when no invoices are paid', fun
     expect($paidUpToInfo['message'])->toBe('Current period ends: 1st of December 2025');
 });
 
-test('Card subscription shows next payment date', function () {
+it('shows the next payment date for a card subscription', function () {
     $user = $this->createBillable();
     
     // Create Card subscription
@@ -122,7 +122,7 @@ test('Card subscription shows next payment date', function () {
     expect($paidUpToInfo['message'])->toBe('The next payment will go off on the 1st of December 2025.');
 });
 
-test('EFT subscription paid up to message uses correct date format', function () {
+it('uses the correct date format in the paid up to message for an EFT subscription', function () {
     $user = $this->createBillable();
     
     // Create EFT subscription

@@ -77,11 +77,7 @@
                 @else
                     {{-- Subscribed --}}
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        You are subscribed to the {{ $subscription->planNameWithInterval() }} plan
-                        @if($isEft)
-                            via EFT
-                        @endif
-                        .
+                        You are subscribed to {{ $subscription->planNameWithInterval() }}.                        
                     </h3>
                     <div class="mt-3 max-w-xl text-sm text-gray-600 dark:text-gray-400">
                         @php

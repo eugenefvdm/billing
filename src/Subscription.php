@@ -876,8 +876,7 @@ class Subscription extends Model
      */
     public function planName(): string
     {
-        $name = $this->plan()['name'] ?? 'Unknown';
-        return $name . ' Plan';
+        return $this->plan()['name'];        
     }
 
     /**
