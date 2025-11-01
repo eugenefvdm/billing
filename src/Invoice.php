@@ -188,7 +188,7 @@ class Invoice extends Model
 
     /**
      * Get the billing period end date from the invoice description.
-     * Parses the description format: "Startup Plan 2025-11-01 to 2025-12-01"
+     * Parses the description format: "Startup Plan Monthly 2025-11-01 to 2025-12-01"
      * Returns the end date (Carbon) or null if not found/parseable.
      */
     public function getPeriodEndDate(): ?Carbon
@@ -199,7 +199,7 @@ class Invoice extends Model
             return null;
         }
 
-        // Parse format: "Startup Plan 2025-11-01 to 2025-12-01"
+        // Parse format: "Plan Name Period 2025-11-01 to 2025-12-01"
         // Extract the end date (after "to ")
         if (preg_match('/to (\d{4}-\d{2}-\d{2})/', $firstItem->description, $matches)) {
             try {

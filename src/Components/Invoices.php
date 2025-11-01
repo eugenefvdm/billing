@@ -36,13 +36,15 @@ class Invoices extends Component
     public function render()
     {
         $this->invoices = $this->user->invoices()
-            ->whereHas('subscription', fn($q) => 
+            ->whereHas(
+                'subscription',
+                fn($q) =>
                 $q->where('payment_method', PaymentMethod::Eft)
             )
+            ->with('items')
             ->orderByDesc('created_at')
             ->get();
 
         return view('billing::components.invoices');
     }
 }
-

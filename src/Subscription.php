@@ -898,11 +898,13 @@ class Subscription extends Model
 
     /**
      * Get the plan name with date range for invoice descriptions.
-     * Returns format: "Startup Plan 2025-11-01 to 2025-12-01"
+     * Returns format: "Plan Name Period 2025-11-01 to 2025-12-01"
      */
     public function planNameWithPeriod(): string
     {
-        return $this->planName() . ' ' 
+        $planNameWithInterval = $this->planNameWithInterval();
+        
+        return $planNameWithInterval . ' ' 
             . $this->starts_at->format('Y-m-d') 
             . ' to ' 
             . $this->ends_at->format('Y-m-d');

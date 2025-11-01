@@ -20,8 +20,8 @@
                         {{ $invoice->isOverdue() ? 'border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-800' : '' }}
                         {{ $invoice->isPaid() ? 'border-green-300 bg-green-50 dark:bg-green-900/20 dark:border-green-800' : 'border-gray-200 dark:border-gray-700' }}">
                         
-                        <div class="flex justify-between items-start">
-                            <div>
+                        <div class="space-y-1">
+                            <div class="flex justify-between items-start gap-4">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <h4 class="font-semibold text-gray-900 dark:text-gray-100">
                                         Invoice #{{ $invoice->id }}
@@ -41,12 +41,8 @@
                                         </span>
                                     @endif
                                 </div>
-                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
-                                    {{ config('billing.billables.user.currency_prefix') }}{{ number_format($invoice->total / 100, 2) }}
-                                </p>
-                            </div>
-                            
-                            <div class="flex gap-2">
+                                
+                                <div class="flex gap-2 flex-shrink-0">
                                 @if(!$invoice->isPaid())
                                     <x-billing::primary-button 
                                         href="{{ route('invoices.pay', $invoice->uuid) }}"
@@ -69,7 +65,30 @@
                                     onclick="console.log('Download button clicked', {uuid: '{{ $invoice->uuid }}', href: '{{ route('invoices.download', $invoice->uuid) }}'}); window.location.href = '{{ route('invoices.download', $invoice->uuid) }}'; return false;">
                                     {{ __('Download') }}
                                 </x-billing::secondary-button>
+                                </div>
                             </div>
+                            
+                            @if($invoice->items->isNotEmpty())
+                                @php
+                                    $descriptions = $invoice->items->pluck('description')->filter()->unique();
+                                @endphp
+                                @if($descriptions->isNotEmpty())
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                                        {{ $descriptions->join(', ') }}
+                                    </p>
+                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
+                                        {{ config('billing.billables.user.currency_prefix') }}{{ number_format($invoice->total / 100, 2) }}
+                                    </p>
+                                @else
+                                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                        {{ config('billing.billables.user.currency_prefix') }}{{ number_format($invoice->total / 100, 2) }}
+                                    </p>
+                                @endif
+                            @else
+                                <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    {{ config('billing.billables.user.currency_prefix') }}{{ number_format($invoice->total / 100, 2) }}
+                                </p>
+                            @endif
                             
                             <script>
                                 console.log('Invoice buttons rendered', {
