@@ -63,7 +63,7 @@ class Customer extends Model
      */
     public function getAvailablePaymentMethods(): array
     {
-        return $this->available_payment_methods ?? ['card'];
+        return $this->available_payment_methods ?? config('billing.default_payment_methods');
     }
 
     /**

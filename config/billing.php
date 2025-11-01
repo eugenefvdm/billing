@@ -3,6 +3,8 @@
 use App\Models\User;
 
 return [
+    'default_payment_methods' => ['card'],
+
     'billables' => [
         'user' => [
             'model' => User::class,

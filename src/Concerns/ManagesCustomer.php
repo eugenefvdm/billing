@@ -98,7 +98,7 @@ trait ManagesCustomer
     public function availablePaymentMethods(): array
     {
         if (!$this->customer) {
-            return ['card']; // Default for backward compatibility
+            return config('billing.default_payment_methods');
         }
 
         return $this->customer->getAvailablePaymentMethods();

@@ -28,7 +28,7 @@ class Subscriptions extends Component
 
     public $afterTrialNextDueDate;
 
-    public $paymentMethod = 'card';
+    public $paymentMethod = config('billing.default_payment_methods')[0];
 
     private $password;
 
@@ -240,10 +240,19 @@ class Subscriptions extends Component
         $availableMethods = $this->user->availablePaymentMethods();
         if (count($availableMethods) === 1) {
             $this->paymentMethod = $availableMethods[0];
-        } elseif ($this->user->canUseCard()) {
-            $this->paymentMethod = 'card'; // Default to card if both available
-        } elseif ($this->user->canUseEft()) {
-            $this->paymentMethod = 'eft';
+        } elseif (count($availableMethods) > 1) {
+            // Find the first method from config that exists in available methods
+            $defaultMethods = config('billing.default_payment_methods');
+            foreach ($defaultMethods as $method) {
+                if (in_array($method, $availableMethods)) {
+                    $this->paymentMethod = $method;
+                    break;
+                }
+            }
+            // Fallback to first available if none match (shouldn't happen if config is correct)
+            if (!in_array($this->paymentMethod, $availableMethods)) {
+                $this->paymentMethod = $availableMethods[0];
+            }
         }
 
         if ($this->user->onGenericTrial()) {
