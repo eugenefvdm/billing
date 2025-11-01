@@ -320,6 +320,8 @@ Schedule::command('subscriptions:forward')->hourly();
 Schedule::command('invoices:check-overdue')->daily();
 ```
 
+**Important**: The `subscriptions:forward` command will create invoices even when there are outstanding unpaid invoices. This is by design to ensure continuous billing cycles - subscriptions continue to advance and generate invoices regardless of payment status. Only manual resubscription via the UI will check for outstanding invoices before creating a new subscription.
+
 ### Creating an EFT Subscription
 
 ```php

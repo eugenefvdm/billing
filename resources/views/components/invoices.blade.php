@@ -22,22 +22,25 @@
                         
                         <div class="flex justify-between items-start">
                             <div>
-                                <h4 class="font-semibold text-gray-900 dark:text-gray-100">
-                                    Invoice #{{ $invoice->id }}
-                                    @if($invoice->isOverdue())
-                                        <span class="text-red-600 dark:text-red-400 text-sm font-normal">
-                                            ({{ $invoice->days_past_due }} {{ __('days overdue') }})
-                                        </span>
-                                    @endif
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <h4 class="font-semibold text-gray-900 dark:text-gray-100">
+                                        Invoice #{{ $invoice->id }}
+                                        @if($invoice->isOverdue())
+                                            <span class="text-red-600 dark:text-red-400 text-sm font-normal">
+                                                ({{ $invoice->days_past_due }} {{ __('days overdue') }})
+                                            </span>
+                                        @endif                                    
+                                    </h4>
                                     @if($invoice->isPaid())
-                                        <span class="text-green-600 dark:text-green-400 text-sm font-normal">
-                                            ({{ __('Paid') }})
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                                            Paid: {{ $invoice->paid_at->translatedFormat('j F Y') }}
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+                                            Due: {{ $invoice->due_at->translatedFormat('j F Y') }}
                                         </span>
                                     @endif
-                                </h4>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                    {{ __('Due') }}: {{ $invoice->due_at->format('F j, Y') }}
-                                </p>
+                                </div>
                                 <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mt-1">
                                     {{ config('billing.billables.user.currency_prefix') }}{{ number_format($invoice->total / 100, 2) }}
                                 </p>
@@ -85,6 +88,18 @@
             </div>
         @endif
     </x-slot>
+
+    @if(session()->has('livewire_dispatch'))
+        @push('scripts')
+        <script>
+            document.addEventListener('livewire:init', () => {
+                @foreach(session()->get('livewire_dispatch', []) as $event)
+                    Livewire.dispatch('{{ $event }}');
+                @endforeach
+            });
+        </script>
+        @endpush
+    @endif
 
 </x-billing::action-section>
 

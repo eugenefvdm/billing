@@ -3,6 +3,7 @@
 namespace Eugenefvdm\Billing\Components;
 
 use Eugenefvdm\Billing\Enums\PaymentMethod;
+use Eugenefvdm\Billing\Events\InvoicePaid;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 

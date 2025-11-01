@@ -76,31 +76,20 @@
                     </div>
                 @else
                     {{-- Subscribed --}}
-                    @php
-                        $planName = $subscription->planName();
-                        // Parse interval from type field (format: "0|monthly" or "1|yearly")
-                        $interval = strpos($subscription->type, '|') !== false 
-                            ? ucfirst(explode('|', $subscription->type)[1])
-                            : ucfirst($subscription->type);
-                    @endphp
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        You are subscribed to the {{ $planName }} {{ $interval }} plan
+                        You are subscribed to the {{ $subscription->planNameWithInterval() }} plan
                         @if($isEft)
                             via EFT
                         @endif
                         .
                     </h3>
                     <div class="mt-3 max-w-xl text-sm text-gray-600 dark:text-gray-400">
-                        @if($isEft)
-                            <p>
-                                Current period ends: {{ $subscription->ends_at->format('jS \o\f F Y') }}
-                            </p>
-                        @else
-                            <p>
-                                The next payment will go off on the
-                                {{ $subscription->next_bill_at->format('jS \o\f F Y') }}.
-                            </p>
-                        @endif
+                        @php
+                            $paidUpToInfo = $subscription->getPaidUpToInfo();
+                        @endphp
+                        <p>
+                            {!! $paidUpToInfo['message'] !!}
+                        </p>
                     </div>
                 @endif
             @endif
@@ -128,10 +117,8 @@
                     {{ __('Cancel Subscription') }}
                 </x-billing::secondary-button>
             @else
-                @php
-                    ray($user)->green();
+                @php                
                     $availableMethods = $user->availablePaymentMethods();
-                    ray($availableMethods)->green();
                     $hasMultipleMethods = count($availableMethods) > 1;
                 @endphp
                 <div class="flex flex-col gap-3">
@@ -183,6 +170,22 @@
                             Please wait...
                         </div>
                     </div>
+                    
+                    @if($this->hasOutstandingInvoices)
+                        <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                            <p class="text-sm text-yellow-800 dark:text-yellow-200">
+                                {{ __('You have an outstanding invoice.') }}
+                            </p>
+                        </div>
+                    @endif
+                    
+                    @error('paymentMethod')
+                        <div class="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                            <p class="text-sm text-red-800 dark:text-red-200">
+                                {{ $message }}
+                            </p>
+                        </div>
+                    @enderror
                 </div>
             @endif
         </div>

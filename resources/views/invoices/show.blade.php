@@ -41,10 +41,10 @@
                         </div>
                         <div class="text-right">
                             <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Invoice Date</h3>
-                            <p class="font-medium dark:text-gray-100">{{ $invoice->issued_at->translatedFormat('F j, Y') }}</p>
+                            <p class="font-medium dark:text-gray-100">{{ $invoice->issued_at->translatedFormat('j F Y') }}</p>
                             <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mt-4 mb-2">Due Date</h3>
                             <p class="font-medium {{ $invoice->isOverdue() ? 'text-red-600 dark:text-red-400' : 'dark:text-gray-100' }}">
-                                {{ $invoice->due_at->translatedFormat('F j, Y') }}
+                                {{ $invoice->due_at->translatedFormat('j F Y') }}
                             </p>
                             <div class="mt-4 flex justify-end">
                                 @if($invoice->isPaid())
@@ -158,7 +158,7 @@
 
             <!-- Footer -->
             <div class="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                <p>{{ config('app.name') }} | {{ config('app.url') }}</p>
+                <p>{{ config('app.name') }} | <a href="{{ config('app.url') }}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ config('app.url') }}</a></p>
                 <p class="mt-2">Thank you for your business!</p>
             </div>
         </div>

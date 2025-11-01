@@ -67,8 +67,15 @@ class Subscriptions extends Component
         
         // Handle EFT subscriptions differently (no Payfast API call needed)
         if ($subscription->payment_method === PaymentMethod::Eft) {
+            Log::debug("=== EFT SUBSCRIPTION CANCELLATION ===");
+            Log::debug("Cancelling EFT subscription ID: {$subscription->id} for user {$this->user->id}");
+            Log::debug("Current subscription ends_at date: " . ($subscription->ends_at ? $subscription->ends_at->format('jS \o\f F Y') : 'NULL'));
+            Log::debug("Current date/time: " . now()->format('jS \o\f F Y \a\t H:i:s'));
+            
             // For EFT subscriptions, cancel at the end of the current billing period
             $endsAt = $subscription->ends_at ?? now();
+            
+            Log::debug("Subscription will be cancelled with ends_at: {$endsAt->format('jS \o\f F Y')}");
             
             $subscription->forceFill([
                 'status' => Subscription::Deleted,
@@ -76,6 +83,7 @@ class Subscriptions extends Component
                 'cancelled_at' => now(),
             ])->save();
             
+            Log::debug("✓ Subscription cancelled successfully");
             Log::info("Cancelled EFT subscription {$subscription->id} for user {$this->user->id}");
         } else {
             // Handle Payfast subscriptions (existing flow)
@@ -132,6 +140,14 @@ class Subscriptions extends Component
                 $this->afterTrialNextDueDate = $this->user->trialEndsAt()->addYear()->addDay()->format('jS \o\f F Y');
             }
         }
+    }
+
+    /**
+     * When payment method changes, clear any errors
+     */
+    public function updatedPaymentMethod($value)
+    {
+        $this->resetErrorBag('paymentMethod');
     }
 
     /**
@@ -217,11 +233,58 @@ class Subscriptions extends Component
             return;
         }
 
-        // Calculate dates
+        // Check for outstanding unpaid invoices
+        $outstandingInvoices = $this->user->invoices()
+            ->unpaid()
+            ->whereHas('subscription', fn($q) => 
+                $q->where('payment_method', PaymentMethod::Eft)
+            )
+            ->count();
+
+        if ($outstandingInvoices > 0) {
+            $this->addError('paymentMethod', 'You have an outstanding invoice.');
+            Log::info("Attempted to create EFT subscription for user {$this->user->id} but there are {$outstandingInvoices} outstanding invoices");
+            return;
+        }
+
+        // Check for existing EFT subscription
+        // Only check EFT subscriptions - Payfast subscriptions are handled separately via webhooks
+        $existingEftSubscription = $this->user->subscriptions()
+            ->where('payment_method', PaymentMethod::Eft)
+            ->where('name', 'default')
+            ->first();
+            
+        if ($existingEftSubscription) {
+            Log::debug("=== RESUBSCRIPTION DETECTED ===");
+            Log::debug("User {$this->user->id} already has an EFT subscription ID: {$existingEftSubscription->id}");
+            Log::debug("Existing EFT subscription status: {$existingEftSubscription->status}");
+            Log::debug("Existing EFT subscription ends_at: " . ($existingEftSubscription->ends_at ? $existingEftSubscription->ends_at->format('jS \o\f F Y') : 'NULL'));
+            Log::debug("Existing EFT subscription cancelled_at: " . ($existingEftSubscription->cancelled_at ? $existingEftSubscription->cancelled_at->format('jS \o\f F Y') : 'NULL'));
+        } else {
+            Log::debug("=== NEW SUBSCRIPTION ===");
+            Log::debug("User {$this->user->id} does not have an existing EFT subscription");
+        }
+
+        // Calculate start date
+        // If resubscribing EFT after cancellation, continue from where the old EFT subscription ended
+        // This prevents creating duplicate periods for time already paid
+        // Payfast subscriptions are handled separately and won't affect this logic
         $startsAt = now();
+        if ($existingEftSubscription && $existingEftSubscription->ends_at && $existingEftSubscription->ends_at->isFuture()) {
+            Log::debug("Resubscribing EFT: Found cancelled EFT subscription ending in the future");
+            Log::debug("Old EFT subscription ends_at: {$existingEftSubscription->ends_at->format('jS \o\f F Y')}");
+            Log::debug("Starting new EFT subscription from old subscription's end date to continue seamlessly");
+            $startsAt = $existingEftSubscription->ends_at->copy();
+        }
+        
         $endsAt = $interval === 'monthly' 
             ? $startsAt->copy()->addMonth() 
             : $startsAt->copy()->addYear();
+
+        Log::debug("=== EFT SUBSCRIPTION CREATION ===");
+        Log::debug("A new EFT subscription is being created for user {$this->user->id}");
+        Log::debug("Subscription period will be FROM: {$startsAt->format('jS \o\f F Y')} TO: {$endsAt->format('jS \o\f F Y')}");
+        Log::debug("Current date/time: " . now()->format('jS \o\f F Y \a\t H:i:s'));
 
         // Create EFT subscription
         $subscription = $this->user->subscriptions()->create([
@@ -233,6 +296,9 @@ class Subscriptions extends Component
             'ends_at' => $endsAt,
         ]);
 
+        Log::debug("✓ New subscription created with ID: {$subscription->id}");
+        Log::debug("✓ Subscription ends_at date: {$subscription->ends_at->format('jS \o\f F Y')}");
+
         // Create invoice for the subscription
         $invoice = InvoiceService::createSubscriptionInvoice($subscription);
 
@@ -243,6 +309,12 @@ class Subscriptions extends Component
         \Illuminate\Support\Facades\Mail::to($this->user->email)
             ->send(new \Eugenefvdm\Billing\Mail\InvoiceCreated($invoice));
 
+        Log::debug("✓ Invoice PDF generated and email sent");
+        Log::debug("=== SUBSCRIPTION CREATION COMPLETE ===");
+        Log::debug("Final subscription ID: {$subscription->id}");
+        Log::debug("Final subscription ends_at: {$subscription->ends_at->format('jS \o\f F Y')}");
+        Log::debug("Final invoice ID: {$invoice->id}");
+        Log::debug("Final invoice period: {$invoice->items()->first()->description}");
         Log::info("Created EFT subscription {$subscription->id} with invoice {$invoice->id} for user {$this->user->id}");
 
         // Refresh user to get latest subscription data
@@ -282,6 +354,23 @@ class Subscriptions extends Component
         if ($this->user->onGenericTrial()) {
             $this->afterTrialNextDueDate = $this->user->trialEndsAt()->addMonth()->addDay()->format('jS \o\f F Y');
         }
+    }
+
+    /**
+     * Get outstanding invoices count for display
+     */
+    public function getHasOutstandingInvoicesProperty(): bool
+    {
+        if ($this->paymentMethod !== 'eft') {
+            return false;
+        }
+
+        return $this->user->invoices()
+            ->unpaid()
+            ->whereHas('subscription', fn($q) => 
+                $q->where('payment_method', PaymentMethod::Eft)
+            )
+            ->exists();
     }
 
     /**

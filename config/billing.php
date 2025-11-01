@@ -3,7 +3,7 @@
 use App\Models\User;
 
 return [
-    'default_payment_methods' => ['card'],
+    'default_payment_methods' => ['card'], // ['card', 'eft']
 
     'billables' => [
         'user' => [

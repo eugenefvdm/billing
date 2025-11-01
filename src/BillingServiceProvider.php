@@ -7,7 +7,10 @@ use Eugenefvdm\Billing\Components\Billing;
 use Eugenefvdm\Billing\Components\Invoices;
 use Eugenefvdm\Billing\Components\Receipts;
 use Eugenefvdm\Billing\Components\Subscriptions;
+use Eugenefvdm\Billing\Events\InvoicePaid;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -38,6 +41,39 @@ class BillingServiceProvider extends ServiceProvider
         Livewire::component('banner', Banner::class);
 
         Livewire::component('billing', Billing::class);
+
+        // Listen for InvoicePaid events and forward subscription period
+        Event::listen(InvoicePaid::class, function (InvoicePaid $event) {
+            $invoice = $event->invoice;
+
+            Log::debug("=== INVOICE PAID EVENT LISTENER ===");
+            Log::debug("InvoicePaid event received for invoice ID: {$invoice->id}");
+            Log::debug("Invoice UUID: {$invoice->uuid}");
+            Log::debug("Invoice subscription_id: " . ($invoice->subscription_id ?? 'NULL'));
+
+            // Forward the subscription period if the invoice belongs to a subscription
+            if ($invoice->subscription) {
+                Log::debug("Invoice belongs to subscription ID: {$invoice->subscription->id}");
+                Log::debug("Calling advancePeriod() on subscription...");
+                $invoice->subscription->advancePeriod($invoice);
+            } else {
+                Log::debug("⚠ Invoice does not belong to a subscription - skipping advancement");
+            }
+
+            // Only dispatch Livewire events in web context (not console/tinker)
+            if (app()->runningInConsole()) {
+                return;
+            }
+
+            // Only dispatch if we have a valid HTTP request
+            if (!request() || !request()->wantsJson()) {
+                // Use session flash to trigger JavaScript event dispatch
+                session()->flash('livewire_dispatch', [
+                    'refreshComponent',
+                    'billingUpdated'
+                ]);
+            }
+        });
 
         Blade::directive('payfastScripts', function () {
             return "<?php if (config('billing.payfast.test_mode')): ?>

@@ -90,6 +90,16 @@ class Subscription extends Model
     }
 
     /**
+     * Get all invoices for this subscription.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
+    /**
      * Determine if the subscription has a specific type.
      *
      * @param  string  $type
@@ -866,7 +876,37 @@ class Subscription extends Model
      */
     public function planName(): string
     {
-        return $this->plan()['name'] ?? 'Unknown';
+        $name = $this->plan()['name'] ?? 'Unknown';
+        return $name . ' Plan';
+    }
+
+    /**
+     * Get the plan name with interval (e.g., "Startup Plan Monthly").
+     * This is the consistent format used throughout the application.
+     */
+    public function planNameWithInterval(): string
+    {
+        $planName = $this->planName();
+        
+        // Parse interval from type field (format: "0|monthly" or "1|yearly")
+        $interval = $this->type;
+        if (strpos($interval, '|') !== false) {
+            [, $interval] = explode('|', $interval);
+        }
+        
+        return $planName . ' ' . ucfirst($interval);
+    }
+
+    /**
+     * Get the plan name with date range for invoice descriptions.
+     * Returns format: "Startup Plan 2025-11-01 to 2025-12-01"
+     */
+    public function planNameWithPeriod(): string
+    {
+        return $this->planName() . ' ' 
+            . $this->starts_at->format('Y-m-d') 
+            . ' to ' 
+            . $this->ends_at->format('Y-m-d');
     }
 
     /**
@@ -892,18 +932,31 @@ class Subscription extends Model
      * 1. Creates an invoice for the current period
      * 2. Generates and emails the PDF
      * 3. Moves the subscription forward by one interval
+     * 
+     * Note: This method will create invoices even when there are outstanding unpaid invoices.
+     * This is by design to ensure continuous billing cycles.
      */
     public function forward(): void
     {
+        Log::debug("=== SUBSCRIPTION FORWARD COMMAND ===");
+        Log::debug("Forward command called for subscription ID: {$this->id}");
+        Log::debug("Current subscription ends_at date: " . ($this->ends_at ? $this->ends_at->format('jS \o\f F Y') : 'NULL'));
+        Log::debug("Current date/time: " . now()->format('jS \o\f F Y \a\t H:i:s'));
+        
         // Only process EFT subscriptions
         if ($this->payment_method !== PaymentMethod::Eft) {
+            Log::debug("✗ Skipping forward - subscription is not EFT");
             return;
         }
 
         // Only forward if current period has ended
         if ($this->starts_at >= now()) {
+            Log::debug("✗ Skipping forward - period hasn't started yet");
+            Log::debug("  Subscription starts_at: {$this->starts_at->format('jS \o\f F Y')}");
             return;
         }
+
+        Log::debug("✓ Period has ended - proceeding with forward");
 
         // Create invoice for the period
         $invoice = \Eugenefvdm\Billing\Services\InvoiceService::createSubscriptionInvoice($this);
@@ -916,6 +969,7 @@ class Subscription extends Model
             ->send(new \Eugenefvdm\Billing\Mail\InvoiceCreated($invoice));
 
         // Move ends_at forward by one interval
+        $oldEndsAt = $this->ends_at->copy();
         $this->ends_at = self::calculateEndsAt(
             $this->ends_at,
             $this->intervalFromType()
@@ -923,7 +977,108 @@ class Subscription extends Model
 
         $this->save();
 
+        Log::debug("=== SUBSCRIPTION FORWARDED ===");
+        Log::debug("Subscription ID: {$this->id} was forwarded");
+        Log::debug("FROM: {$oldEndsAt->format('jS \o\f F Y')}");
+        Log::debug("TO: {$this->ends_at->format('jS \o\f F Y')}");
+        Log::debug("New invoice created: ID {$invoice->id}");
         Log::info("Forwarded EFT subscription {$this->id}, new ends_at: {$this->ends_at}");
+    }
+
+    /**
+     * Advance the subscription period by one interval when an invoice is paid.
+     * 
+     * This method moves the subscription forward without creating a new invoice,
+     * as the invoice has already been created and is now being paid.
+     * 
+     * CRITICAL RULE: Only advances when the subscription period has ENDED (ends_at is in the past).
+     * 
+     * When you subscribe:
+     * - Subscription period: Nov 1 - Dec 1
+     * - Invoice created: Nov 1 - Dec 1
+     * - Paying invoice: You're paying for the period you're ABOUT TO USE
+     * - Do NOT advance until Dec 1 passes
+     * 
+     * After period ends:
+     * - Subscription period: Nov 1 - Dec 1 (Dec 1 is in the past)
+     * - Pay invoice: Advances to Jan 1
+     * 
+     * @param \Eugenefvdm\Billing\Invoice|null $invoice The invoice being paid (optional, for period matching)
+     */
+    public function advancePeriod(?Invoice $invoice = null): void
+    {
+        Log::debug("=== SUBSCRIPTION ADVANCEMENT CHECK ===");
+        Log::debug("Checking if subscription ID: {$this->id} should advance");
+        Log::debug("Current subscription ends_at date: " . ($this->ends_at ? $this->ends_at->format('jS \o\f F Y') : 'NULL'));
+        Log::debug("Current date/time: " . now()->format('jS \o\f F Y \a\t H:i:s'));
+        
+        // Only process EFT subscriptions
+        if ($this->payment_method !== PaymentMethod::Eft) {
+            Log::debug("✗ Skipping advance - subscription is not EFT (payment_method: {$this->payment_method->value})");
+            return;
+        }
+
+        // Only advance if subscription has an ends_at date
+        if (!$this->ends_at) {
+            Log::debug("✗ Skipping advance - subscription has no ends_at date");
+            return;
+        }
+
+        // CRITICAL: Only advance if the current period has ended (ends_at is in the past)
+        // This ensures we don't advance when paying for periods that haven't started yet
+        if ($this->ends_at->isFuture()) {
+            Log::debug("✗ Skipping advance - period hasn't ended yet");
+            Log::debug("  Subscription ends_at: {$this->ends_at->format('jS \o\f F Y')}");
+            Log::debug("  Current date: " . now()->format('jS \o\f F Y'));
+            Log::debug("  Days until period ends: " . now()->diffInDays($this->ends_at, false));
+            Log::info("Skipping advance for subscription {$this->id} - period hasn't ended yet (ends_at: {$this->ends_at})");
+            return;
+        }
+
+        Log::debug("✓ Period has ended - subscription ends_at is in the past");
+
+        // If invoice is provided, verify it matches the current subscription period
+        // This prevents advancing when paying invoices for wrong periods
+        if ($invoice) {
+            $invoicePeriodEnd = $invoice->getPeriodEndDate();
+            if ($invoicePeriodEnd) {
+                Log::debug("Invoice provided - checking period match");
+                Log::debug("  Invoice period ends: {$invoicePeriodEnd->format('jS \o\f F Y')}");
+                Log::debug("  Subscription period ends: {$this->ends_at->format('jS \o\f F Y')}");
+                
+                // Check if invoice period end matches subscription's current period end
+                // Allow for small differences (1 day tolerance) due to date calculations
+                $daysDiff = abs($this->ends_at->diffInDays($invoicePeriodEnd));
+                Log::debug("  Date difference: {$daysDiff} days");
+                
+                if ($daysDiff > 1) {
+                    Log::debug("✗ Skipping advance - invoice period doesn't match subscription period");
+                    Log::info("Skipping advance for subscription {$this->id} - invoice period end ({$invoicePeriodEnd}) doesn't match subscription period end ({$this->ends_at}), diff: {$daysDiff} days");
+                    return;
+                }
+                
+                Log::debug("✓ Invoice period matches subscription period (within tolerance)");
+            } else {
+                Log::debug("⚠ Invoice provided but could not determine period end date");
+            }
+        } else {
+            Log::debug("No invoice provided - advancing based on period end only");
+        }
+
+        // Move ends_at forward by one interval
+        $oldEndsAt = $this->ends_at->copy();
+        $this->ends_at = self::calculateEndsAt(
+            $this->ends_at,
+            $this->intervalFromType()
+        );
+
+        $this->save();
+
+        Log::debug("=== SUBSCRIPTION ADVANCED ===");
+        Log::debug("Subscription ID: {$this->id} was forwarded");
+        Log::debug("FROM: {$oldEndsAt->format('jS \o\f F Y')}");
+        Log::debug("TO: {$this->ends_at->format('jS \o\f F Y')}");
+        Log::info("Advanced EFT subscription {$this->id} period from {$oldEndsAt} to {$this->ends_at}");
     }
 
     /**
@@ -940,5 +1095,60 @@ class Subscription extends Model
     public function scopeCard($query)
     {
         return $query->where('payment_method', PaymentMethod::Card);
+    }
+
+    /**
+     * Get the "paid up to" date and message for display.
+     * 
+     * For EFT subscriptions: Returns the latest paid invoice's period end date.
+     * For Card subscriptions: Returns the next_bill_at date.
+     * 
+     * @return array{date: Carbon|null, message: string}
+     */
+    public function getPaidUpToInfo(): array
+    {
+        if ($this->payment_method === PaymentMethod::Eft) {
+            // For EFT, find the latest paid invoice and get its period end date
+            $latestPaidInvoice = $this->invoices()
+                ->where('status', \Eugenefvdm\Billing\Enums\InvoiceStatus::Paid)
+                ->orderByDesc('paid_at')
+                ->first();
+            
+            if ($latestPaidInvoice) {
+                $periodEnd = $latestPaidInvoice->getPeriodEndDate();
+                if ($periodEnd) {
+                    return [
+                        'date' => $periodEnd,
+                        'message' => "You are paid up to: {$periodEnd->format('jS \o\f F Y')}"
+                    ];
+                }
+            }
+            
+            // Fallback: if no paid invoices, show subscription ends_at
+            if ($this->ends_at) {
+                return [
+                    'date' => $this->ends_at,
+                    'message' => "Current period ends: {$this->ends_at->format('jS \o\f F Y')}"
+                ];
+            }
+            
+            return [
+                'date' => null,
+                'message' => 'No payment information available'
+            ];
+        } else {
+            // For Card subscriptions, show next payment date
+            if ($this->next_bill_at) {
+                return [
+                    'date' => $this->next_bill_at,
+                    'message' => "The next payment will go off on the {$this->next_bill_at->format('jS \o\f F Y')}."
+                ];
+            }
+            
+            return [
+                'date' => null,
+                'message' => 'No payment information available'
+            ];
+        }
     }
 }

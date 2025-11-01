@@ -141,7 +141,7 @@
         <strong>{{ $invoice->billable->name }}</strong><br>
         {{ $invoice->billable->email }}<br>
         @if($invoice->subscription)
-            Subscription: {{ $invoice->subscription->planName() }} ({{ ucfirst($invoice->subscription->type) }})
+            Subscription: {{ $invoice->subscription->planNameWithInterval() }}
         @endif
     </div>
 

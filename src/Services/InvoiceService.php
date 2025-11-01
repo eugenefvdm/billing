@@ -28,6 +28,20 @@ class InvoiceService
 
         $dueAt = now()->addDays(config('billing.invoice.default_due_days', 7));
 
+        // Get subscription period dates
+        $startsAt = $subscription->starts_at;
+        $endsAt = $subscription->ends_at;
+        $periodDescription = $subscription->planNameWithPeriod();
+
+        Log::debug("=== INVOICE CREATION ===");
+        Log::debug("Creating invoice for subscription ID: {$subscription->id}");
+        Log::debug("Invoice period: {$periodDescription}");
+        Log::debug("Invoice period FROM: {$startsAt->format('jS \o\f F Y')} TO: {$endsAt->format('jS \o\f F Y')}");
+        Log::debug("Subscription ends_at date: {$endsAt->format('jS \o\f F Y')}");
+        Log::debug("Current date/time: " . now()->format('jS \o\f F Y \a\t H:i:s'));
+        Log::debug("Invoice due date: {$dueAt->format('jS \o\f F Y')}");
+        Log::debug("Invoice amount: R " . number_format($amount / 100, 2));
+
         $invoice = $subscription->billable->invoices()->create([
             'subscription_id' => $subscription->id,
             'uuid' => Str::uuid(),
@@ -39,12 +53,18 @@ class InvoiceService
 
         // Add line item
         $invoice->items()->create([
-            'description' => $subscription->period_description,
+            'description' => $periodDescription,
             'quantity' => 1,
             'unit_price' => $amount,
         ]);
 
-        return $invoice->fresh();
+        $invoice = $invoice->fresh();
+        
+        Log::debug("✓ Invoice created with ID: {$invoice->id}");
+        Log::debug("✓ Invoice UUID: {$invoice->uuid}");
+        Log::debug("✓ Invoice status: {$invoice->status->value}");
+
+        return $invoice;
     }
 
     /**

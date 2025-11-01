@@ -4,11 +4,14 @@ namespace Eugenefvdm\Billing;
 
 use Carbon\Carbon;
 use Eugenefvdm\Billing\Enums\InvoiceStatus;
+use Eugenefvdm\Billing\Events\InvoicePaid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class Invoice extends Model
 {
@@ -124,10 +127,54 @@ class Invoice extends Model
      */
     public function markAsPaid(?Carbon $paidAt = null): void
     {
+        $paidAtDate = $paidAt ?? now();
+        
+        Log::debug("=== INVOICE PAYMENT ===");
+        Log::debug("Invoice ID: {$this->id} is being marked as paid");
+        Log::debug("Invoice UUID: {$this->uuid}");
+        
+        // Get invoice period from description
+        $invoicePeriodEnd = $this->getPeriodEndDate();
+        if ($invoicePeriodEnd) {
+            Log::debug("Invoice period ends on: {$invoicePeriodEnd->format('jS \o\f F Y')}");
+        } else {
+            Log::debug("⚠ Could not determine invoice period end date from description");
+        }
+        
+        Log::debug("Invoice was paid at: {$paidAtDate->format('jS \o\f F Y \a\t H:i:s')}");
+        Log::debug("Current date/time: " . now()->format('jS \o\f F Y \a\t H:i:s'));
+        
+        // Check if invoice has subscription
+        $hasSubscription = $this->subscription_id !== null;
+        if ($hasSubscription) {
+            $this->loadMissing('subscription');
+            $subscription = $this->subscription;
+            Log::debug("Invoice belongs to subscription ID: {$subscription->id}");
+            Log::debug("Subscription ends_at date: " . ($subscription->ends_at ? $subscription->ends_at->format('jS \o\f F Y') : 'NULL'));
+            Log::debug("Subscription ends_at is in the future: " . ($subscription->ends_at && $subscription->ends_at->isFuture() ? 'YES' : 'NO'));
+            Log::debug("Subscription ends_at is in the past: " . ($subscription->ends_at && $subscription->ends_at->isPast() ? 'YES' : 'NO'));
+        } else {
+            Log::debug("⚠ Invoice does not belong to a subscription");
+        }
+
         $this->update([
             'status' => InvoiceStatus::Paid,
-            'paid_at' => $paidAt ?? now(),
+            'paid_at' => $paidAtDate,
         ]);
+
+        if (Auth::user()) {
+            $message = "Invoice {$this->id} was marked as paid by " . Auth::user()->email;
+        } else {
+            $message = "Invoice {$this->id} was marked as paid";
+        }
+
+        Log::info($message);
+        Log::debug("✓ Invoice status updated to: Paid");
+
+        // Dispatch event that Livewire components can listen to
+        event(new InvoicePaid($this));
+        
+        Log::debug("✓ InvoicePaid event dispatched");
     }
 
     /**
@@ -140,6 +187,33 @@ class Invoice extends Model
     }
 
     /**
+     * Get the billing period end date from the invoice description.
+     * Parses the description format: "Startup Plan 2025-11-01 to 2025-12-01"
+     * Returns the end date (Carbon) or null if not found/parseable.
+     */
+    public function getPeriodEndDate(): ?Carbon
+    {
+        // Get the first invoice item's description
+        $firstItem = $this->items()->first();
+        if (!$firstItem || !$firstItem->description) {
+            return null;
+        }
+
+        // Parse format: "Startup Plan 2025-11-01 to 2025-12-01"
+        // Extract the end date (after "to ")
+        if (preg_match('/to (\d{4}-\d{2}-\d{2})/', $firstItem->description, $matches)) {
+            try {
+                return Carbon::parse($matches[1]);
+            } catch (\Exception $e) {
+                Log::warning("Failed to parse period end date from invoice {$this->id} description: {$firstItem->description}");
+                return null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Recalculate the invoice total from items.
      */
     public function recalculateTotal(): void
@@ -149,4 +223,3 @@ class Invoice extends Model
         $this->save();
     }
 }
-
