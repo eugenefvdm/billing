@@ -1019,7 +1019,19 @@ class Subscription extends Model
     {
         $plans = config('billing.billables.user.plans');
         
-        // Find plan that has this subscription's type (monthly or yearly)
+        // Parse type field which contains format like "0|monthly" or "1|yearly"
+        // Extract plan index and interval
+        if (strpos($this->type, '|') !== false) {
+            [$planIndex, $interval] = explode('|', $this->type);
+            $planIndex = (int) $planIndex;
+            
+            // Get the plan at the specified index
+            if (isset($plans[$planIndex])) {
+                return $plans[$planIndex];
+            }
+        }
+        
+        // Fallback: try to find plan by matching type directly (for backwards compatibility)
         return collect($plans)->first(function ($plan) {
             return isset($plan[$this->type]);
         }) ?? [];
@@ -1038,7 +1050,14 @@ class Subscription extends Model
      */
     public function intervalFromType(): \Eugenefvdm\Billing\Enums\PlanInterval
     {
-        // Extract "monthly" or "yearly" from type field
+        // Parse type field which contains format like "0|monthly" or "1|yearly"
+        // Extract interval (monthly or yearly)
+        if (strpos($this->type, '|') !== false) {
+            [$planIndex, $interval] = explode('|', $this->type);
+            return \Eugenefvdm\Billing\Enums\PlanInterval::from($interval);
+        }
+        
+        // Fallback: try to use type directly as interval (for backwards compatibility)
         return \Eugenefvdm\Billing\Enums\PlanInterval::from($this->type);
     }
 

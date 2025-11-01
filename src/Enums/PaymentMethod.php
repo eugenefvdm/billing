@@ -13,7 +13,7 @@ enum PaymentMethod: string
     {
         return match ($this) {
             self::Card => 'Credit Card',
-            self::Eft => 'EFT / Bank Transfer',            
+            self::Eft => 'EFTr',            
         };
     }
 }

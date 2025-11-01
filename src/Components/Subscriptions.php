@@ -28,7 +28,7 @@ class Subscriptions extends Component
 
     public $afterTrialNextDueDate;
 
-    public $paymentMethod = config('billing.default_payment_methods')[0];
+    public $paymentMethod;
 
     private $password;
 
@@ -253,6 +253,10 @@ class Subscriptions extends Component
             if (!in_array($this->paymentMethod, $availableMethods)) {
                 $this->paymentMethod = $availableMethods[0];
             }
+        } else {
+            // Fallback to first config method if no available methods
+            $defaultMethods = config('billing.default_payment_methods');
+            $this->paymentMethod = $defaultMethods[0];
         }
 
         if ($this->user->onGenericTrial()) {

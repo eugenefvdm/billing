@@ -74,7 +74,10 @@
                         $subscription = $user->subscription('default');
                         $isEft = $subscription->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
                         $planName = $subscription->planName();
-                        $interval = ucfirst($subscription->type);
+                        // Parse interval from type field (format: "0|monthly" or "1|yearly")
+                        $interval = strpos($subscription->type, '|') !== false 
+                            ? ucfirst(explode('|', $subscription->type)[1])
+                            : ucfirst($subscription->type);
                     @endphp
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                         You are subscribed to the {{ $planName }} {{ $interval }} plan
@@ -139,7 +142,7 @@
                                 @if(in_array('eft', $availableMethods))
                                     <label class="flex items-center">
                                         <input type="radio" wire:model="paymentMethod" value="eft" class="mr-2">
-                                        <span>{{ __('EFT / Bank Transfer') }}</span>
+                                        <span>{{ __('EFT') }}</span>
                                     </label>
                                 @endif
                             </div>
