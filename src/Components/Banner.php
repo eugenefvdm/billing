@@ -67,6 +67,6 @@ class Banner extends Component
 
     public function render()
     {
-        return view('payfast::components.banner');
+        return view('billing::components.banner');
     }
 }

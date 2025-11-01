@@ -27,6 +27,6 @@ class Receipts extends Component
     {
         $this->receipts = $this->user->receipts;
 
-        return view('payfast::components.receipts');
+        return view('billing::components.receipts');
     }
 }

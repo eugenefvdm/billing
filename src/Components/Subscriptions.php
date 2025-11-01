@@ -291,6 +291,6 @@ class Subscriptions extends Component
      */
     public function render()
     {
-        return view('payfast::components.subscriptions');
+        return view('billing::components.subscriptions');
     }
 }

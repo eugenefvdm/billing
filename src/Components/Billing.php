@@ -9,6 +9,6 @@ class Billing extends Component
 {
     public function render(): View
     {
-        return view('payfast::components.billing');
+        return view('billing::components.billing');
     }
 }

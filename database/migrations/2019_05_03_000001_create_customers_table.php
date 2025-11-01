@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email');
             $table->timestamp('trial_ends_at')->nullable();
+            $table->json('available_payment_methods')->nullable();
             $table->timestamps();
         });
     }

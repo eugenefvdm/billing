@@ -1,11 +1,11 @@
-<x-payfast::action-section>
+<x-billing::action-section>
 
     <x-slot name="title">
         {{ __('Receipts') }}
     </x-slot>
 
     <x-slot name="description">
-        {{ __('A list of transactions and receipts.') }}
+        {{ __('A list of credit card receipts.') }}
     </x-slot>
 
     <x-slot name="content">
@@ -21,13 +21,15 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($receipts as $receipt)
-                        <tr class="odd:bg-white odd:dark:bg-zinc-800 even:bg-gray-50 even:dark:bg-zinc-700">
+                    @foreach ($receipts as $receipt)
+                        <tr
+                            class="odd:bg-white odd:dark:bg-zinc-800 even:bg-gray-50 even:dark:bg-zinc-700 hover:bg-gray-100 dark:hover:bg-zinc-600 transition-colors">
                             <td class="py-1 px-1">{{ $receipt->payfast_payment_id }}</td>
                             <td class="py-1 px-1">{{ $receipt->item_name }}</td>
                             <td class="py-1 px-1 text-right">R {{ $receipt->amount_gross }}</td>
                             <td class="py-1 px-1">{{ $receipt->payment_status }}</td>
-                            <td class="py-1 px-1 whitespace-nowrap">{{ isset($receipt->billing_date) ? $receipt->billing_date->format('Y-m-d') : '' }}</td>
+                            <td class="py-1 px-1 whitespace-nowrap">
+                                {{ isset($receipt->billing_date) ? $receipt->billing_date->format('Y-m-d') : '' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -35,4 +37,4 @@
         </div>
     </x-slot>
 
-</x-payfast::action-section>
+</x-billing::action-section>

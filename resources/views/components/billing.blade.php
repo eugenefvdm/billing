@@ -23,17 +23,18 @@
                 $subscription = $user->subscription('default');
                 $hasEftSubscription = $subscription?->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
                 $hasCardSubscription = $subscription?->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Card;
+                $hasReceipts = $user->receipts()->exists();
                 $hasEftInvoices = $user->invoices()
                     ->whereHas('subscription', fn($q) => 
                         $q->where('payment_method', \Eugenefvdm\Billing\Enums\PaymentMethod::Eft)
                     )
                     ->exists();
                 $showInvoices = $hasEftSubscription || $hasEftInvoices;
-                $showReceipts = $subscription && $hasCardSubscription;
+                $showReceipts = !$hasEftSubscription && ($hasReceipts || $hasCardSubscription);
             @endphp
 
             @if($showInvoices)
-                <x-payfast::section-border />
+                <x-billing::section-border />
 
                 <!-- Invoices -->
                 <div class="mt-10 sm:mt-0">
@@ -43,7 +44,7 @@
             @endif
 
             @if($showReceipts)
-                <x-payfast::section-border />
+                <x-billing::section-border />
 
                 <!-- Receipts -->
                 <div class="mt-10 sm:mt-0">

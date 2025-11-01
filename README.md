@@ -84,7 +84,7 @@ In your header:
 In your view:
 
 ```php
-@include('payfast::components.pricing')
+@include('billing::components.pricing')
 ```
 
 ## Migrations
@@ -185,7 +185,7 @@ Replace `$user->name` with your first name and last name fields.
         ]] )        
 </div>
 
-<x-payfast::section-border />
+<x-billing::section-border />
 <!-- End Subscriptions -->
 
 <!-- Receipts -->
@@ -193,7 +193,7 @@ Replace `$user->name` with your first name and last name fields.
         @livewire('receipts')
     </div>
 
-<x-payfast::section-border />
+<x-billing::section-border />
 <!-- End Receipts -->
 ```
 

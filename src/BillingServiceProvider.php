@@ -20,10 +20,9 @@ class BillingServiceProvider extends ServiceProvider
         ], 'config');
 
         $this->publishes([
-            __DIR__ . '/../resources/views' => resource_path('views/vendor/payfast'),
+            __DIR__ . '/../resources/views' => resource_path('views/vendor/billing'),
         ], 'views');
 
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'payfast');
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'billing');
 
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
