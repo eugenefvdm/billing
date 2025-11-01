@@ -12,7 +12,10 @@ class Invoices extends Component
 
     public $invoices;
 
-    protected $listeners = ['refreshComponent' => 'refreshInvoices'];
+    protected $listeners = [
+        'refreshComponent' => 'refreshInvoices',
+        'billingUpdated' => 'refreshInvoices',
+    ];
 
     public function mount()
     {

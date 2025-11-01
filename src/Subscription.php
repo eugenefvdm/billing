@@ -401,30 +401,6 @@ class Subscription extends Model
         $query->whereNull('ends_at')->orWhere('ends_at', '<=', Carbon::now());
     }
 
-    /**
-     * Perform a "one off" charge on top of the subscription for the given amount.
-     *
-     * @param  float  $amount
-     * @param  string  $name
-     * @return array
-     *
-     * @throws \Exception
-     */
-    public function charge($amount, $name)
-    {
-        if (strlen($name) > 50) {
-            throw new Exception('Charge name has a maximum length of 50 characters.');
-        }
-
-        $payload = $this->billable->payfastOptions([
-            'amount' => $amount,
-            'charge_name' => $name,
-        ]);
-
-        $this->payfastInfo = null;
-
-        return Cashier::post("/subscription/{$this->paddle_id}/charge", $payload)['response'];
-    }
 
     /**
      * Increment the quantity of the subscription.
@@ -476,11 +452,6 @@ class Subscription extends Model
     {
         $this->guardAgainstUpdates('update quantities');
 
-        $this->updatePaddleSubscription(array_merge($options, [
-            'quantity' => $quantity,
-            'prorate' => $this->prorate,
-        ]));
-
         $this->forceFill([
             'quantity' => $quantity,
         ])->save();
@@ -500,11 +471,6 @@ class Subscription extends Model
     public function swap($type, array $options = [])
     {
         $this->guardAgainstUpdates('swap plans');
-
-        $this->updatePaddleSubscription(array_merge($options, [
-            'type' => $type,
-            'prorate' => $this->prorate,
-        ]));
 
         $this->forceFill([
             'type' => $type,
@@ -536,10 +502,6 @@ class Subscription extends Model
      */
     public function pause()
     {
-        $this->updatePayfastSubscription([
-            'pause' => true,
-        ]);
-
         $info = $this->payfastInfo();
 
         $this->forceFill([
@@ -559,10 +521,6 @@ class Subscription extends Model
      */
     public function unpause()
     {
-        $this->updatePaddleSubscription([
-            'pause' => false,
-        ]);
-
         $this->forceFill([
             'status' => self::Active,
             'ends_at' => null,
@@ -621,51 +579,6 @@ class Subscription extends Model
         $subscription->save();
     }
 
-    /**
-     * Get the Payfast update url. Not in use, copied from Laravel Cashier Paddle.
-     *
-     * @return array
-     */
-    public function updateUrl()
-    {
-        return $this->payfastInfo()['update_url'];
-    }
-
-    /**
-     * Begin creating a new modifier.
-     *
-     * @param  float  $amount
-     * @return \Laravel\Paddle\ModifierBuilder
-     */
-    public function newModifier($amount)
-    {
-        return new ModifierBuilder($this, $amount);
-    }
-
-    /**
-     * Get all of the modifiers for this subscription.
-     *
-     * @return \Illuminate\Support\Collection
-     */
-    public function modifiers()
-    {
-        $result = Cashier::post('/subscription/modifiers', array_merge([
-            'subscription_id' => $this->paddle_id,
-        ], $this->billable->payfastOptions()));
-
-        return collect($result['response'])->map(fn (array $modifier) => new Modifier($this, $modifier));
-    }
-
-    /**
-     * Get a modifier instance by ID.
-     *
-     * @param  int  $id
-     * @return \Laravel\Paddle\Modifier|null
-     */
-    public function modifier($id)
-    {
-        return $this->modifiers()->first(fn (Modifier $modifier) => $modifier->id() === $id);
-    }
 
     /**
      * Cancel the subscription at the end of the current billing period.
@@ -685,35 +598,10 @@ class Subscription extends Model
         } else {
             $endsAt = $this->onTrial()
                 ? $this->trial_ends_at
-                : $this->nextPayment()->date();
-        }
-
-        return $this->cancelAt($endsAt);
-    }
-
-    /**
-     * Cancel the subscription at the end of the current billing period.
-     *
-     * @return $this
-     */
-    public function cancel2()
-    {
-        if ($this->onGracePeriod()) {
-            return $this;
-        }
-
-        if ($this->onPausedGracePeriod() || $this->paused()) {
-            $endsAt = $this->paused_at->isFuture()
-                ? $this->paused_at
-                : Carbon::now();
-        } else {
-            $endsAt = $this->onTrial()
-                ? $this->trial_ends_at
-                // : $this->nextPayment()->date();
                 : $this->runDate()->date()->subDay(1);
         }
 
-        return $this->cancelAt2($endsAt);
+        return $this->cancelAt($endsAt);
     }
 
     /**
@@ -729,40 +617,10 @@ class Subscription extends Model
     /**
      * Cancel the subscription at a specific moment in time.
      *
-     * Paddle version but shouldn't be in use anymore in lieu of cancelAt2
-     *
      * @param  \DateTimeInterface  $endsAt
      * @return $this
      */
     public function cancelAt(DateTimeInterface $endsAt)
-    {
-        $payload = $this->billable->payfastOptions([
-            'subscription_id' => $this->paddle_id,
-        ]);
-
-        Cashier::post('/subscription/users_cancel', $payload);
-
-        $this->forceFill([
-            'status' => self::Deleted,
-            'ends_at' => $endsAt,
-        ])->save();
-
-        $this->payfastInfo = null;
-
-        return $this;
-    }
-
-    /**
-     * Cancel the subscription at a specific moment in time.
-     *
-     * This is the Payfast version. It calls the Payfast API instead of the Cashier::post method
-     * and it also adds a cancelled_at field which is non-default to the standard Cashier
-     * fields. This fields is useful for UI output to reminder user when they cancelled.
-     *
-     * @param  \DateTimeInterface  $endsAt
-     * @return $this
-     */
-    public function cancelAt2(DateTimeInterface $endsAt)
     {
         Payfast::cancelSubscription($this->provider_id);
 
@@ -778,19 +636,9 @@ class Subscription extends Model
     }
 
     /**
-     * Get the Payfast cancellation url. Not in use, copied from Laravel Cashier Paddle.
-     *
-     * @return array
-     */
-    public function cancelUrl()
-    {
-        return $this->payfastInfo()['cancel_url'];
-    }
-
-    /**
      * Get the last payment for the subscription.
      *
-     * @return \Laravel\Paddle\Payment
+     * @return \Eugenefvdm\Billing\Payment
      */
     public function lastPayment()
     {
@@ -802,33 +650,10 @@ class Subscription extends Model
     /**
      * Get the next payment for the subscription.
      *
-     * This is the paddle version. Do not use.
+     * Fixes the currency to ZAR and strips the date of the time portion which is
+     * normally returned like this: 2022-11-01T00:00:00+02:00 for use in Payment date() method
      *
-     * We're now using the Payfast version called 'runDate()'
-     *
-     * @return \Laravel\Paddle\Payment|null
-     *
-     */
-    public function nextPayment()
-    {
-        if (! isset($this->payfastInfo()['next_payment'])) {
-            return;
-        }
-
-        $payment = $this->payfastInfo()['next_payment'];
-
-        return new Payment($payment['amount'], $payment['currency'], $payment['date']);
-    }
-
-    /**
-     * Get the next payment for the subscription.
-     *
-     * This is the Payfast version. In fixes the currency to ZAR and strips the
-     * date of the time portion which in normally returned like this:
-     * 2022-11-01T00:00:00+02:00 for use in Payment date() method
-     *
-     *
-     * @return \Eugenefvdm\Payfast\Payment|null
+     * @return \Eugenefvdm\Billing\Payment|null
      */
     public function runDate()
     {
@@ -896,9 +721,8 @@ class Subscription extends Model
     /**
      * Get raw information about the subscription from Payfast.
      *
-     * This is based on paddleInfo() from the original Laravel Cashier code for Paddle. It calls the
-     * Payfast API and then returns the 'response' array in the 'data' array of the response object
-     * This will contain pertinent information about the subscription on record at Payfast
+     * Calls the Payfast API and returns the 'response' array in the 'data' array of the response object.
+     * This will contain pertinent information about the subscription on record at Payfast.
      *
      * @return array
      */
@@ -953,7 +777,7 @@ class Subscription extends Model
             3 => 'Monthly',
             4 => 'Quarterly',
             5 => 'Biannually',
-            6 => 'Annual'
+            6 => 'Annual',
         };
     }
 

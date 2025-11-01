@@ -80,7 +80,7 @@ class Subscriptions extends Component
         } else {
             // Handle Payfast subscriptions (existing flow)
             Payfast::debug('Cancelling subscription for ' . $subscription->provider_id, 'warning');
-            $subscription->cancel2();
+            $subscription->cancel();
         }
 
         $this->user->refresh();

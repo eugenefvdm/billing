@@ -11,11 +11,19 @@ class Receipts extends Component
 
     public $receipts;
 
-    protected $listeners = ['refreshComponent' => '$refresh'];
+    protected $listeners = [
+        'refreshComponent' => '$refresh',
+        'billingUpdated' => 'refreshReceipts',
+    ];
 
     public function mount()
     {
         $this->user = Auth::user();
+    }
+
+    public function refreshReceipts()
+    {
+        $this->user->refresh();
     }
 
     /**

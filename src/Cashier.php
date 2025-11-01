@@ -2,8 +2,6 @@
 
 namespace Eugenefvdm\Billing;
 
-use Eugenefvdm\Billing\Exceptions\PayfastException;
-use Illuminate\Support\Facades\Http;
 use Money\Currencies\ISOCurrencies;
 use Money\Currency;
 use Money\Formatter\IntlMoneyFormatter;
@@ -69,75 +67,6 @@ class Cashier
     public static function webhookUrl()
     {
         return config('cashier.webhook') ?? route('cashier.webhook');
-    }
-
-    /**
-     * Get the Paddle vendors API url.
-     *
-     * @return string
-     */
-    public static function vendorsUrl()
-    {
-        return 'https://'.(config('cashier.sandbox') ? 'sandbox-' : '').'vendors.paddle.com';
-    }
-
-    /**
-     * Get the Paddle checkout API url.
-     *
-     * @return string
-     */
-    public static function checkoutUrl()
-    {
-        return 'https://'.(config('cashier.sandbox') ? 'sandbox-' : '').'checkout.paddle.com';
-    }
-
-    /**
-     * Perform a GET Paddle API call.
-     *
-     * @param  string  $uri
-     * @param  array  $payload
-     * @return \Illuminate\Http\Client\Response
-     *
-     * @throws \Laravel\Paddle\Exceptions\PaddleException
-     */
-    public static function get($uri, array $payload = [])
-    {
-        return static::makeApiCall('get', static::checkoutUrl().'/api/2.0'.$uri, $payload);
-    }
-
-    /**
-     * Perform a POST Paddle API call.
-     *
-     * @param  string  $uri
-     * @param  array  $payload
-     * @return \Illuminate\Http\Client\Response
-     *
-     * @throws \Laravel\Paddle\Exceptions\PaddleException
-     */
-    public static function post($uri, array $payload = [])
-    {
-        return static::makeApiCall('post', static::vendorsUrl().'/api/2.0'.$uri, $payload);
-    }
-
-    /**
-     * Perform a Paddle API call.
-     *
-     * @param  string  $method
-     * @param  string  $uri
-     * @param  array  $payload
-     * @return \Illuminate\Http\Client\Response
-     *
-     * @throws \Laravel\Paddle\Exceptions\PaddleException
-     */
-    protected static function makeApiCall($method, $uri, array $payload = [])
-    {
-        $response = Http::$method($uri, $payload);
-
-        if ($response['success'] === false) {
-            throw new PayfastException($response['error']['message'], $response['error']['code']);
-        }
-
-        return $response;
     }
 
     /**

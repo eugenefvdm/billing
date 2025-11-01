@@ -207,7 +207,8 @@
         @push('payfast-event-listener')
             <script>
                 const refreshComponent = () => {
-                    console.log('Refreshing subscription status by emitting a billingUpdated event')
+                    console.log('Billing update detected: Refreshing subscription status and related components')
+                    console.log('This will update the receipts table (if you have card payments) or invoices table (if you have EFT payments)')
 
                     window.Livewire.dispatch('billingUpdated')
                 }
