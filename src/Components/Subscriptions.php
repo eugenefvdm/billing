@@ -2,7 +2,10 @@
 
 namespace Eugenefvdm\Billing\Components;
 
+use Eugenefvdm\Billing\Enums\PaymentMethod;
 use Eugenefvdm\Billing\Facades\Payfast;
+use Eugenefvdm\Billing\Services\InvoiceService;
+use Eugenefvdm\Billing\Subscription;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
@@ -25,6 +28,8 @@ class Subscriptions extends Component
 
     public $afterTrialNextDueDate;
 
+    public $paymentMethod = 'card';
+
     private $password;
 
     protected $listeners = [
@@ -39,6 +44,7 @@ class Subscriptions extends Component
     public function billingWasUpdated()
     {
         $this->dispatch('refreshComponent')->to('receipts');
+        $this->dispatch('refreshComponent')->to('invoices');
 
         $this->displayingCreateSubscription = false;
     }
@@ -112,13 +118,28 @@ class Subscriptions extends Component
     }
 
     /**
-     * Displays the Payfast modal with all the correct form values
+     * Displays the Payfast modal with all the correct form values or creates EFT subscription
      */
     public function displayCreateSubscription()
     {
         ray('displayCreateSubscription has been called');
         ray($this->type);
+        ray($this->paymentMethod);
 
+        // Validate payment method selection
+        $availableMethods = $this->user->availablePaymentMethods();
+        if (!in_array($this->paymentMethod, $availableMethods)) {
+            $this->addError('paymentMethod', 'Selected payment method is not available.');
+            return;
+        }
+
+        // Handle EFT subscription creation
+        if ($this->paymentMethod === 'eft') {
+            $this->createEftSubscription();
+            return;
+        }
+
+        // Handle Card subscription (existing Payfast flow)
         // User's trial has been activated but they have never been a subscriber
         if ($this->user->onGenericTrial() && ! $this->user->subscribed('default')) {
             $billingDate = $this->user->trialEndsAt()->addDay();
@@ -157,9 +178,73 @@ class Subscriptions extends Component
         $this->dispatch('launchPayfast', identifier: $this->identifier);
     }
 
+    /**
+     * Create an EFT subscription and invoice
+     */
+    public function createEftSubscription()
+    {
+        // Extract plan index and interval from type (format: "0|monthly" or "1|yearly")
+        [$planIndex, $interval] = explode('|', $this->type);
+        $planIndex = (int) $planIndex;
+
+        // Get plan config
+        $plans = config('billing.billables.user.plans');
+        if (!isset($plans[$planIndex])) {
+            $this->addError('type', 'Invalid plan selected.');
+            return;
+        }
+
+        $plan = $plans[$planIndex];
+        if (!isset($plan[$interval])) {
+            $this->addError('type', 'Invalid interval selected.');
+            return;
+        }
+
+        // Calculate dates
+        $startsAt = now();
+        $endsAt = $interval === 'monthly' 
+            ? $startsAt->copy()->addMonth() 
+            : $startsAt->copy()->addYear();
+
+        // Create EFT subscription
+        $subscription = $this->user->subscriptions()->create([
+            'name' => 'default',
+            'type' => $interval,
+            'payment_method' => PaymentMethod::Eft,
+            'status' => Subscription::STATUS_ACTIVE,
+            'start_date' => $startsAt,
+            'ends_at' => $endsAt,
+        ]);
+
+        // Create invoice for the subscription
+        $invoice = InvoiceService::createSubscriptionInvoice($subscription);
+
+        // Generate PDF
+        InvoiceService::createPdf($invoice);
+
+        // Email invoice
+        \Illuminate\Support\Facades\Mail::to($this->user->email)
+            ->send(new \Eugenefvdm\Billing\Mail\InvoiceCreated($invoice));
+
+        Log::info("Created EFT subscription {$subscription->id} with invoice {$invoice->id} for user {$this->user->id}");
+
+        // Refresh components
+        $this->dispatch('billingUpdated');
+    }
+
     public function mount()
     {
         $this->user = Auth::user();
+
+        // Set default payment method based on available methods
+        $availableMethods = $this->user->availablePaymentMethods();
+        if (count($availableMethods) === 1) {
+            $this->paymentMethod = $availableMethods[0];
+        } elseif ($this->user->canUseCard()) {
+            $this->paymentMethod = 'card'; // Default to card if both available
+        } elseif ($this->user->canUseEft()) {
+            $this->paymentMethod = 'eft';
+        }
 
         if ($this->user->onGenericTrial()) {
             $this->afterTrialNextDueDate = $this->user->trialEndsAt()->addMonth()->addDay()->format('jS \o\f F Y');

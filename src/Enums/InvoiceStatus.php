@@ -2,9 +2,9 @@
 
 namespace Eugenefvdm\Billing\Enums;
 
-use Filament\Support\Contracts\HasLabel;
+// use Filament\Support\Contracts\HasLabel;
 
-enum InvoiceStatus: string implements HasLabel
+enum InvoiceStatus: string
 {
     case Draft = 'draft';
     case Unpaid = 'unpaid';

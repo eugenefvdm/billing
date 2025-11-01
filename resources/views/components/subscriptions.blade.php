@@ -49,7 +49,10 @@
                     {{-- Grace period --}}
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                         Your subscription was cancelled
-                        {{ $user->subscription('default')->cancelled_at->format('j F Y \a\t H:i:s') }}.
+                        @if($user->subscription('default')->cancelled_at)
+                            {{ $user->subscription('default')->cancelled_at->format('j F Y \a\t H:i:s') }}
+                        @endif
+                        .
                     </h3>
                     <div class="mt-3 max-w-xl text-sm text-gray-600 dark:text-gray-400">
                         @if (\Carbon\Carbon::now()->diffInDays($user->subscriptions()->active()->first()->ends_at->format('Y-m-d')) != 0)
@@ -67,16 +70,30 @@
                     </div>
                 @else
                     {{-- Subscribed --}}
+                    @php
+                        $subscription = $user->subscription('default');
+                        $isEft = $subscription->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
+                        $planName = $subscription->planName();
+                        $interval = ucfirst($subscription->type);
+                    @endphp
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                        You are subscribed to the
-                        {{ config('billing.billables.user.plans')[explode('|', $user->subscription('default')->type)[0]]['name'] }}
-                        {{ ucfirst(explode('|', $user->subscription('default')->type)[1]) }} plan.
+                        You are subscribed to the {{ $planName }} {{ $interval }} plan
+                        @if($isEft)
+                            via EFT
+                        @endif
+                        .
                     </h3>
                     <div class="mt-3 max-w-xl text-sm text-gray-600 dark:text-gray-400">
-                        <p>
-                            The next payment will go off on the
-                            {{ $user->subscription('default')->next_bill_at->format('jS \o\f F Y') }}.
-                        </p>
+                        @if($isEft)
+                            <p>
+                                Current period ends: {{ $subscription->ends_at->format('jS \o\f F Y') }}
+                            </p>
+                        @else
+                            <p>
+                                The next payment will go off on the
+                                {{ $subscription->next_bill_at->format('jS \o\f F Y') }}.
+                            </p>
+                        @endif
                     </div>
                 @endif
             @endif
@@ -86,41 +103,75 @@
         <div class="mt-5">
             {{-- @if ($user->subscribed('default') && !$user->onGenericTrial() && !$user->subscription('default')->onGracePeriod())                             --}}
             @if ($user->subscribed('default') && !$user->subscription('default')->onGracePeriod())
-                <x-payfast::secondary-button wire:click="updateCard">
-                    {{ __('Update Card Information') }}
-                </x-payfast::secondary-button>
+                @php
+                    $subscription = $user->subscription('default');
+                    $isEft = $subscription->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
+                @endphp
+                @if(!$isEft)
+                    <x-payfast::secondary-button wire:click="updateCard">
+                        {{ __('Update Card Information') }}
+                    </x-payfast::secondary-button>
+                @endif
 
                 <x-payfast::secondary-button wire:click="confirmCancelSubscription" wire:loading.attr="disabled">
                     {{ __('Cancel Subscription') }}
                 </x-payfast::secondary-button>
             @else
-                <div class="flex">
-                    <select wire:model="type" name="type"
-                        class="mt-1 block pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                        @foreach (config('billing.billables.user.plans') as $index => $plan)
-                            <option value="{{ $index }}|monthly">{{ $plan['name'] }} Monthly -
-                                {{ config('billing.billables.user.currency_prefix') }}{{ number_format($plan['monthly']['recurring_amount'] / 100, 2) }}
-                            </option>
-                            <option value="{{ $index }}|yearly">{{ $plan['name'] }} Yearly -
-                                {{ config('billing.billables.user.currency_prefix') }}{{ number_format($plan['yearly']['recurring_amount'] / 100, 2) }}
-                            </option>
-                        @endforeach
-                    </select>
+                @php
+                    ray($user)->green();
+                    $availableMethods = $user->availablePaymentMethods();
+                    ray($availableMethods)->green();
+                    $hasMultipleMethods = count($availableMethods) > 1;
+                @endphp
+                <div class="flex flex-col gap-3">
+                    @if($hasMultipleMethods)
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                {{ __('Payment Method') }}
+                            </label>
+                            <div class="flex gap-4">
+                                @if(in_array('card', $availableMethods))
+                                    <label class="flex items-center">
+                                        <input type="radio" wire:model="paymentMethod" value="card" class="mr-2">
+                                        <span>{{ __('Credit Card') }}</span>
+                                    </label>
+                                @endif
+                                @if(in_array('eft', $availableMethods))
+                                    <label class="flex items-center">
+                                        <input type="radio" wire:model="paymentMethod" value="eft" class="mr-2">
+                                        <span>{{ __('EFT / Bank Transfer') }}</span>
+                                    </label>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+                    <div class="flex">
+                        <select wire:model="type" name="type"
+                            class="mt-1 block pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
+                            @foreach (config('billing.billables.user.plans') as $index => $plan)
+                                <option value="{{ $index }}|monthly">{{ $plan['name'] }} Monthly -
+                                    {{ config('billing.billables.user.currency_prefix') }}{{ number_format($plan['monthly']['recurring_amount'] / 100, 2) }}
+                                </option>
+                                <option value="{{ $index }}|yearly">{{ $plan['name'] }} Yearly -
+                                    {{ config('billing.billables.user.currency_prefix') }}{{ number_format($plan['yearly']['recurring_amount'] / 100, 2) }}
+                                </option>
+                            @endforeach
+                        </select>
 
-                    {{-- This is the main button that gets clicked to subscribe to a plan. It calls displayCreateSubscription(). --}}
-                    <x-payfast::secondary-button class="ml-2 align-middle h-9 mt-2"
-                        wire:click="displayCreateSubscription">
-                        @if ($user->subscribed('default') && $user->subscription('default')->onGracePeriod())
-                            {{ __('Resubscribe') }}
-                        @else
-                            {{ __('Subscribe') }}
-                        @endif
-                    </x-payfast::secondary-button>
+                        {{-- This is the main button that gets clicked to subscribe to a plan. It calls displayCreateSubscription(). --}}
+                        <x-payfast::secondary-button class="ml-2 align-middle h-9 mt-2"
+                            wire:click="displayCreateSubscription">
+                            @if ($user->subscribed('default') && $user->subscription('default')->onGracePeriod())
+                                {{ __('Resubscribe') }}
+                            @else
+                                {{ __('Subscribe') }}
+                            @endif
+                        </x-payfast::secondary-button>
 
-                    <div wire:loading class="ml-2 align-middle mt-3 text-gray-600 dark:text-gray-400">
-                        Please wait...
+                        <div wire:loading class="ml-2 align-middle mt-3 text-gray-600 dark:text-gray-400">
+                            Please wait...
+                        </div>
                     </div>
-
                 </div>
             @endif
         </div>

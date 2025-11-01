@@ -89,4 +89,46 @@ trait ManagesCustomer
     {
         //
     }
+
+    /**
+     * Get available payment methods for this billable model.
+     *
+     * @return array
+     */
+    public function availablePaymentMethods(): array
+    {
+        if (!$this->customer) {
+            return ['card']; // Default for backward compatibility
+        }
+
+        return $this->customer->getAvailablePaymentMethods();
+    }
+
+    /**
+     * Determine if the billable model can use card payments.
+     *
+     * @return bool
+     */
+    public function canUseCard(): bool
+    {
+        if (!$this->customer) {
+            return true; // Default for backward compatibility
+        }
+
+        return $this->customer->canUseCard();
+    }
+
+    /**
+     * Determine if the billable model can use EFT payments.
+     *
+     * @return bool
+     */
+    public function canUseEft(): bool
+    {
+        if (!$this->customer) {
+            return false; // Default for backward compatibility
+        }
+
+        return $this->customer->canUseEft();
+    }
 }

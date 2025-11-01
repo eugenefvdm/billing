@@ -18,13 +18,37 @@
             </div>
             <!-- End Subscriptions -->
 
-            <x-payfast::section-border />
+            @php
+                $user = Auth()->user();
+                $hasEftSubscription = $user->subscription('default')?->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
+                $hasEftInvoices = $user->invoices()
+                    ->whereHas('subscription', fn($q) => 
+                        $q->where('payment_method', \Eugenefvdm\Billing\Enums\PaymentMethod::Eft)
+                    )
+                    ->exists();
+                $showInvoices = $hasEftSubscription || $hasEftInvoices;
+                $showReceipts = !$hasEftSubscription;
+            @endphp
 
-            <!-- Receipts -->
-            <div class="mt-10 sm:mt-0">
-                @livewire('receipts')
-            </div>
-            <!-- End Receipts -->
+            @if($showInvoices)
+                <x-payfast::section-border />
+
+                <!-- Invoices -->
+                <div class="mt-10 sm:mt-0">
+                    @livewire('invoices')
+                </div>
+                <!-- End Invoices -->
+            @endif
+
+            @if($showReceipts)
+                <x-payfast::section-border />
+
+                <!-- Receipts -->
+                <div class="mt-10 sm:mt-0">
+                    @livewire('receipts')
+                </div>
+                <!-- End Receipts -->
+            @endif
 
         </div>
     </div>

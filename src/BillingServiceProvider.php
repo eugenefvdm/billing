@@ -4,6 +4,7 @@ namespace Eugenefvdm\Billing;
 
 use Eugenefvdm\Billing\Components\Banner;
 use Eugenefvdm\Billing\Components\Billing;
+use Eugenefvdm\Billing\Components\Invoices;
 use Eugenefvdm\Billing\Components\Receipts;
 use Eugenefvdm\Billing\Components\Subscriptions;
 use Illuminate\Support\Facades\Blade;
@@ -32,6 +33,8 @@ class BillingServiceProvider extends ServiceProvider
         Livewire::component('subscriptions', Subscriptions::class);
 
         Livewire::component('receipts', Receipts::class);
+
+        Livewire::component('invoices', Invoices::class);
 
         Livewire::component('banner', Banner::class);
 

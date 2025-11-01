@@ -2,9 +2,9 @@
 
 namespace Eugenefvdm\Billing\Enums;
 
-use Filament\Support\Contracts\HasLabel;
+// use Filament\Support\Contracts\HasLabel;
 
-enum PaymentMethod: string implements HasLabel
+enum PaymentMethod: string
 {
     case Card = 'card';
     case Eft = 'eft';

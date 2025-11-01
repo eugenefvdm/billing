@@ -23,6 +23,7 @@ class Customer extends Model
      */
     protected $casts = [
         'trial_ends_at' => 'datetime',
+        'available_payment_methods' => 'array',
     ];
 
     /**
@@ -53,5 +54,35 @@ class Customer extends Model
     public function hasExpiredGenericTrial()
     {
         return $this->trial_ends_at && $this->trial_ends_at->isPast();
+    }
+
+    /**
+     * Get available payment methods for this customer.
+     *
+     * @return array
+     */
+    public function getAvailablePaymentMethods(): array
+    {
+        return $this->available_payment_methods ?? ['card'];
+    }
+
+    /**
+     * Determine if the customer can use card payments.
+     *
+     * @return bool
+     */
+    public function canUseCard(): bool
+    {
+        return in_array('card', $this->getAvailablePaymentMethods());
+    }
+
+    /**
+     * Determine if the customer can use EFT payments.
+     *
+     * @return bool
+     */
+    public function canUseEft(): bool
+    {
+        return in_array('eft', $this->getAvailablePaymentMethods());
     }
 }

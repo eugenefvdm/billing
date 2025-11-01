@@ -2,9 +2,9 @@
 
 namespace Eugenefvdm\Billing\Enums;
 
-use Filament\Support\Contracts\HasLabel;
+// use Filament\Support\Contracts\HasLabel;
 
-enum PlanInterval: string implements HasLabel
+enum PlanInterval: string
 {
     case Daily = 'daily';
     case Weekly = 'weekly';

@@ -2,7 +2,6 @@
 
 namespace Eugenefvdm\Billing\Services;
 
-use Barryvdh\DomPDF\Facade\Pdf;
 use Eugenefvdm\Billing\Enums\InvoiceStatus;
 use Eugenefvdm\Billing\Invoice;
 use Eugenefvdm\Billing\Subscription;
@@ -45,7 +44,7 @@ class InvoiceService
      */
     public static function createPdf(Invoice $invoice, bool $stream = false)
     {
-        $pdf = Pdf::loadView('billing::pdf.invoice', [
+        $pdf = app('dompdf.wrapper')->loadView('billing::pdf.invoice', [
             'invoice' => $invoice,
         ]);
 
