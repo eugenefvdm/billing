@@ -15,7 +15,7 @@ class SubscriptionForwardCommand extends Command
     public function handle(): int
     {
         $subscriptions = Subscription::eft()
-            ->where('status', Subscription::STATUS_ACTIVE)
+            ->where('status', Subscription::Active)
             ->get();
 
         $forwarded = 0;

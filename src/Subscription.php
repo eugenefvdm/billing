@@ -21,21 +21,21 @@ class Subscription extends Model
 
     public $table = 'subscriptions';
 
-    public const STATUS_ACTIVE = 'ACTIVE';
-    public const STATUS_TRIALING = 'trialing';
-    public const STATUS_PAST_DUE = 'past_due';
-    public const STATUS_PAUSED = 'PAUSED';
-    public const STATUS_DELETED = 'CANCELLED';
-    public const STATUS_UPSTREAM = 'UPSTREAM';
+    public const Active = 'ACTIVE';
+    public const Trialing = 'trialing';
+    public const PastDue = 'past_due';
+    public const Paused = 'PAUSED';
+    public const Deleted = 'CANCELLED';
+    public const Upstream = 'UPSTREAM'; // Only applicable for Payfast
 
     public static function uiOptions()
     {
         return [
-            self::STATUS_ACTIVE => 'Active',
-            self::STATUS_TRIALING => 'Trialing',
-            self::STATUS_PAST_DUE => 'Past Due',
-            self::STATUS_PAUSED => 'Paused',
-            self::STATUS_DELETED => 'Cancelled',
+            self::Active => 'Active',
+            self::Trialing => 'Trialing',
+            self::PastDue => 'Past Due',
+            self::Paused => 'Paused',
+            self::Deleted => 'Cancelled',
         ];
     }
 
@@ -130,8 +130,8 @@ class Subscription extends Model
     public function active(): bool
     {
         return (is_null($this->ends_at) || $this->onGracePeriod() || $this->onPausedGracePeriod()) &&
-            (! Cashier::$deactivatePastDue || $this->status !== self::STATUS_PAST_DUE) &&
-            $this->status !== self::STATUS_PAUSED;
+            (! Cashier::$deactivatePastDue || $this->status !== self::PastDue) &&
+            $this->status !== self::Paused;
     }
 
     /**
@@ -150,10 +150,10 @@ class Subscription extends Model
                 ->orWhere(function ($query) {
                     $query->onPausedGracePeriod();
                 });
-        })->where('status', '!=', self::STATUS_PAUSED);
+        })->where('status', '!=', self::Paused);
 
         if (Cashier::$deactivatePastDue) {
-            $query->where('status', '!=', self::STATUS_PAST_DUE);
+            $query->where('status', '!=', self::PastDue);
         }
     }
 
@@ -164,7 +164,7 @@ class Subscription extends Model
      */
     public function pastDue()
     {
-        return $this->status === self::STATUS_PAST_DUE;
+        return $this->status === self::PastDue;
     }
 
     /**
@@ -175,7 +175,7 @@ class Subscription extends Model
      */
     public function scopePastDue($query)
     {
-        $query->where('status', self::STATUS_PAST_DUE);
+        $query->where('status', self::PastDue);
     }
 
     /**
@@ -206,7 +206,7 @@ class Subscription extends Model
      */
     public function paused()
     {
-        return $this->status === self::STATUS_PAUSED;
+        return $this->status === self::Paused;
     }
 
     /**
@@ -217,7 +217,7 @@ class Subscription extends Model
      */
     public function scopePaused($query)
     {
-        $query->where('status', self::STATUS_PAUSED);
+        $query->where('status', self::Paused);
     }
 
     /**
@@ -228,7 +228,7 @@ class Subscription extends Model
      */
     public function scopeNotPaused($query)
     {
-        $query->where('status', '!=', self::STATUS_PAUSED);
+        $query->where('status', '!=', self::Paused);
     }
 
     /**
@@ -564,7 +564,7 @@ class Subscription extends Model
         ]);
 
         $this->forceFill([
-            'status' => self::STATUS_ACTIVE,
+            'status' => self::Active,
             'ends_at' => null,
             'paused_at' => null,
         ])->save();
@@ -606,7 +606,7 @@ class Subscription extends Model
         $subscription->status = $result['data']['response']['status_text'];
         $subscription->next_bill_at = $result['data']['response']['run_date'];
 
-        if ($subscription->status == self::STATUS_DELETED && ! $subscription->cancelled_at) {
+        if ($subscription->status == self::Deleted && ! $subscription->cancelled_at) {
             $message = ("Subscription status at Payfast is cancelled but no cancelled_at exists. Adding now() as cancellation date.");
 
             Log::warning($message);
@@ -743,7 +743,7 @@ class Subscription extends Model
         Cashier::post('/subscription/users_cancel', $payload);
 
         $this->forceFill([
-            'status' => self::STATUS_DELETED,
+            'status' => self::Deleted,
             'ends_at' => $endsAt,
         ])->save();
 
@@ -767,7 +767,7 @@ class Subscription extends Model
         Payfast::cancelSubscription($this->provider_id);
 
         $this->forceFill([
-            'status' => self::STATUS_DELETED,
+            'status' => self::Deleted,
             'ends_at' => $endsAt,
             'cancelled_at' => now(),
         ])->save();

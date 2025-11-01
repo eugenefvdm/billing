@@ -19,7 +19,7 @@ test('customers can perform subscription checks', function () {
         'name' => 'main',
         'provider_id' => "244",
         'type' => 'monthly',
-        'status' => Subscription::STATUS_ACTIVE,
+        'status' => Subscription::Active,
     ]);
 
     expect($billable->subscribed('main'))->toBeTrue();
@@ -57,7 +57,7 @@ test('customers can check if their subscription is on trial', function () {
         'name' => 'main',
         'provider_id' => "244",
         'type' => 'monthly',
-        'status' => Subscription::STATUS_TRIALING,
+        'status' => Subscription::Trialing,
         'trial_ends_at' => Carbon::tomorrow(),
     ]);
 
@@ -90,7 +90,7 @@ test('customers can check if their subscription is cancelled', function () {
         'name' => 'main',
         'provider_id' => "244",
         'type' => 'monthly',
-        'status' => Subscription::STATUS_DELETED,
+        'status' => Subscription::Deleted,
         'ends_at' => Carbon::tomorrow(),
     ]);
 
@@ -111,7 +111,7 @@ test('customers can check if the grace period is over', function () {
         'name' => 'main',
         'provider_id' => "244",
         'type' => 'monthly',
-        'status' => Subscription::STATUS_DELETED,
+        'status' => Subscription::Deleted,
         'ends_at' => Carbon::yesterday(),
     ]);
 
@@ -132,7 +132,7 @@ test('customers can check if the subscription is paused', function () {
         'name' => 'main',
         'provider_id' => "244",
         'type' => 'monthly',
-        'status' => Subscription::STATUS_PAUSED,
+        'status' => Subscription::Paused,
     ]);
 
     expect($subscription->valid())->toBeFalse();
@@ -152,7 +152,7 @@ test('subscriptions can be on a paused grace period', function () {
         'name' => 'main',
         'provider_id' => "244",
         'type' => 'monthly',
-        'status' => Subscription::STATUS_ACTIVE,
+        'status' => Subscription::Active,
         'paused_at' => Carbon::tomorrow(),
     ]);
 

@@ -21,7 +21,7 @@ return new class extends Migration
             // Provider subscription token (For Payfast: this is the subscription token)
             $table->string('provider_id')->unique()->nullable();
             
-            // Status (For Payfast: API status like 'ACTIVE', 'PAUSED', 'CANCELLED')
+            // Status (For Payfast: API status like 'ACTIVE', 'PAUSED', 'CANCELLED','UPSTREAM')
             $table->string('status');
             
             // EFT-specific: when the current billing period started

@@ -211,7 +211,7 @@ class Subscriptions extends Component
             'name' => 'default',
             'type' => $interval,
             'payment_method' => PaymentMethod::Eft,
-            'status' => Subscription::STATUS_ACTIVE,
+            'status' => Subscription::Active,
             'start_date' => $startsAt,
             'ends_at' => $endsAt,
         ]);
