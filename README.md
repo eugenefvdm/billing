@@ -1,4 +1,4 @@
-## About Payfast Onsite Subscriptions
+## About Payfast and EFT subscriptions billing
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/eugenefvdm/billing) ![Tests](https://github.com/eugenefvdm/billing/actions/workflows/tests.yml/badge.svg)
  ![GitHub](https://img.shields.io/github/license/eugenefvdm/billing)
  [![Downloads](https://img.shields.io/packagist/dt/eugenefvdm/billing.svg)](https://packagist.org/packages/eugenefvdm/billing)
@@ -10,15 +10,15 @@ Requirements:
 - PHP 8.3
 - Laravel 11.x or higher
 - Livewire
-- A [Payfast account](https://www.payfast.co.za/registration)
-- For testing, a free [Payfast sandbox account](https://sandbox.payfast.co.za/)
+- Optional: If you're using Payfast, a [Payfast account](https://www.payfast.co.za/registration)
+- Optional: For testing Payfast, a free [Payfast sandbox account](https://sandbox.payfast.co.za/)
 
 ## Installation
 
 Install the package via composer:
 
 ```bash
-composer require fintechsystems/payfast-onsite-subscriptions
+composer require eugenefvdm/billing
 ```
 
 ## Publish Configuration and Views
