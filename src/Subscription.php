@@ -849,7 +849,7 @@ class Subscription extends Model
     /**
      * Get the plan configuration from config.
      */
-    public function plan(): array
+    public function planConfig(): array
     {
         $plans = config('billing.billables.user.plans');
         
@@ -876,7 +876,7 @@ class Subscription extends Model
      */
     public function planName(): string
     {
-        return $this->plan()['name'];        
+        return $this->planConfig()['name'];        
     }
 
     /**

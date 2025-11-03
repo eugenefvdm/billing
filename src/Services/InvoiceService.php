@@ -16,7 +16,7 @@ class InvoiceService
      */
     public static function createSubscriptionInvoice(Subscription $subscription): Invoice
     {
-        $plan = $subscription->plan();
+        $plan = $subscription->planConfig();
         
         // Extract interval from type (format: "0|monthly" or "1|yearly")
         $interval = $subscription->type;
