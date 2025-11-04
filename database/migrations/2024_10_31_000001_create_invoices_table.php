@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('subscription_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('subscription_id')->nullable();
             $table->morphs('billable');
             $table->uuid('uuid')->unique();
             
@@ -36,10 +36,7 @@ return new class extends Migration
             $table->timestamp('third_reminder_sent_at')->nullable();
             
             $table->timestamps();
-            $table->softDeletes();
-            
-            $table->index('status');
-            $table->index('due_at');
+            $table->softDeletes();                        
         });
     }
 

@@ -2,6 +2,10 @@
 
 All notable changes to `billing` will be documented in this file.
 
+## [v0.3] 2025-11-04
+
+- Removed constrain on invoices linked to subscriptions and indexes
+
 ## [v0.2] 2025-11-03
 
 - Fix bug with plan relationship loading, implement planConfig
