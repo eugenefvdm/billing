@@ -5,22 +5,17 @@ uses(\Tests\Feature\FeatureTestCase::class);
 use Carbon\Carbon;
 use Eugenefvdm\Billing\Enums\InvoiceStatus;
 use Eugenefvdm\Billing\Enums\PaymentMethod;
-use Eugenefvdm\Billing\Events\InvoicePaid;
-use Eugenefvdm\Billing\Invoice;
-use Eugenefvdm\Billing\InvoiceItem;
 use Eugenefvdm\Billing\Services\InvoiceService;
 use Eugenefvdm\Billing\Subscription;
-use Illuminate\Support\Facades\Event;
 
 test('advancing subscription period when paying invoice for current period that has ended', function () {
     $user = $this->createBillable();
     
     // Create EFT subscription with period that ended yesterday
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::yesterday(),
     ]);
 
@@ -48,10 +43,9 @@ test('not advancing subscription when paying invoice for future period', functio
     
     // Create EFT subscription with period ending in the future
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::now()->addMonth(),
     ]);
 
@@ -93,10 +87,9 @@ test('not advancing subscription when paying invoice for current period that has
     
     // Create EFT subscription with period ending in the future
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::now()->addDays(10), // Period hasn't ended yet
     ]);
 
@@ -121,10 +114,9 @@ test('not advancing subscription when current period has not ended and invoice d
     
     // Create EFT subscription with period ending in the future
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::now()->addDays(10), // Period hasn't ended yet
     ]);
 
@@ -163,10 +155,9 @@ test('not advancing subscription when invoice period does not match subscription
     
     // Create EFT subscription with period ending Nov 1 (in the past)
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::parse('2025-11-01'),
     ]);
 
@@ -206,10 +197,9 @@ test('not advancing non-EFT subscriptions', function () {
     
     // Create Card subscription
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Card,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::yesterday(),
     ]);
 
@@ -236,10 +226,9 @@ test('advancing multiple times when paying invoices in sequence', function () {
     
     // Create EFT subscription with period ending in the past
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => $pastDate->copy(),
     ]);
 
@@ -272,10 +261,9 @@ test('advancing yearly subscription period when paying invoice for current perio
     
     // Create EFT subscription with period that ended yesterday
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|yearly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::yesterday(),
     ]);
 
@@ -303,10 +291,9 @@ test('not advancing yearly subscription when paying invoice for future period', 
     
     // Create EFT subscription with period ending in the future
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|yearly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::now()->addYear(),
     ]);
 
@@ -348,10 +335,9 @@ test('not advancing yearly subscription when paying invoice for current period t
     
     // Create EFT subscription with period ending in the future
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|yearly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::now()->addDays(10), // Period hasn't ended yet
     ]);
 
@@ -376,10 +362,9 @@ test('not advancing yearly subscription when current period has not ended and in
     
     // Create EFT subscription with period ending in the future
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|yearly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::now()->addDays(10), // Period hasn't ended yet
     ]);
 
@@ -418,10 +403,9 @@ test('not advancing yearly subscription when invoice period does not match subsc
     
     // Create EFT subscription with period ending Nov 1 (in the past)
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|yearly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::parse('2025-11-01'),
     ]);
 
@@ -463,10 +447,9 @@ test('advancing yearly subscription multiple times when paying invoices in seque
     
     // Create EFT subscription with period ending in the past
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|yearly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => $pastDate->copy(),
     ]);
 

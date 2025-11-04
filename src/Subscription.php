@@ -21,21 +21,21 @@ class Subscription extends Model
 
     public $table = 'subscriptions';
 
-    public const Active = 'ACTIVE';
-    public const Trialing = 'trialing';
-    public const PastDue = 'past_due';
-    public const Paused = 'PAUSED';
-    public const Deleted = 'CANCELLED';
-    public const Upstream = 'UPSTREAM'; // Only applicable for Payfast
+    public const STATUS_ACTIVE = 'ACTIVE';
+    public const STATUS_TRIALING = 'trialing';
+    public const STATUS_PAST_DUE = 'past_due';
+    public const STATUS_PAUSED = 'PAUSED';
+    public const STATUS_CANCELED = 'CANCELLED';
+    public const STATUS_UPSTREAM = 'UPSTREAM'; // Only applicable to Payfast
 
-    public static function uiOptions()
+    public static function statusOptions()
     {
         return [
-            self::Active => 'Active',
-            self::Trialing => 'Trialing',
-            self::PastDue => 'Past Due',
-            self::Paused => 'Paused',
-            self::Deleted => 'Cancelled',
+            self::STATUS_ACTIVE => 'Active',
+            self::STATUS_TRIALING => 'Trialing',
+            self::STATUS_PAST_DUE => 'Past Due',
+            self::STATUS_PAUSED => 'Paused',
+            self::STATUS_CANCELED => 'Cancelled',
         ];
     }
 
@@ -51,15 +51,15 @@ class Subscription extends Model
      *
      * @var array
      */
-    protected $casts = [
-        'token' => 'string',
-        'type' => 'string',
-        'payment_method' => PaymentMethod::class,
-        'next_bill_at' => 'datetime',
-        'cancelled_at' => 'datetime',
+    protected $casts = [        
         'trial_ends_at' => 'datetime',
         'paused_at' => 'datetime',
         'ends_at' => 'datetime',
+        'provider_id' => 'string', // The Payfast Token
+        'type' => 'string', // Composition of the array plan
+        'payment_method' => PaymentMethod::class,
+        'next_bill_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     /**
@@ -80,7 +80,7 @@ class Subscription extends Model
     }
 
     /**
-     * Get all of the receipts for the Billable model.
+     * Get all of the receipts for the Billable model. Only applicable on credit card transactions.
      *
      * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
@@ -100,26 +100,23 @@ class Subscription extends Model
     }
 
     /**
-     * Determine if the subscription has a specific type.
+     * Determine if the subscription has a specific plan.
+     * 
+     * Checks the interval part of the type field (e.g., "monthly" from "0|monthly").
      *
-     * @param  string  $type
+     * @param  string  $plan The plan interval to check (e.g., "monthly", "yearly")
      * @return bool
-     */
-    public function hasType($type)
-    {
-        return $this->type == $type;
-    }
-
-    /**
-     * Determine if the subscription has a specific plan (alias for hasType).
-     *
-     * @param  string  $plan
-     * @return bool
-     * @deprecated Use hasType() instead
      */
     public function hasPlan($plan)
     {
-        return $this->hasType($plan);
+        // If type contains |, extract the interval part (e.g., "monthly" from "0|monthly")
+        if (strpos($this->type, '|') !== false) {
+            [, $interval] = explode('|', $this->type);
+            return $interval === $plan;
+        }
+        
+        // Backwards compatibility: exact match for old format (e.g., type = "monthly")
+        return $this->type === $plan;
     }
 
     /**
@@ -139,9 +136,29 @@ class Subscription extends Model
      */
     public function active(): bool
     {
-        return (is_null($this->ends_at) || $this->onGracePeriod() || $this->onPausedGracePeriod()) &&
-            (! Cashier::$deactivatePastDue || $this->status !== self::PastDue) &&
-            $this->status !== self::Paused;
+        // Check status-based conditions first (applies to both payment methods)
+        if ($this->status === self::STATUS_PAUSED) {
+            return false;
+        }
+        
+        if (Cashier::$deactivatePastDue && $this->status === self::STATUS_PAST_DUE) {
+            return false;
+        }
+        
+        // Payment method-specific date logic
+        if ($this->payment_method === PaymentMethod::Eft) {
+            // EFT: Active if current date is within the billing period
+            // Period is from (ends_at - interval) to ends_at
+            if (!$this->ends_at) {
+                return false; // EFT subscriptions must have ends_at
+            }
+            
+            $startsAt = $this->starts_at; // Uses getStartsAtAttribute accessor
+            return $startsAt <= now() && now() < $this->ends_at;
+        } else {
+            // Card: Active if ends_at is NULL or in grace period
+            return is_null($this->ends_at) || $this->onGracePeriod() || $this->onPausedGracePeriod();
+        }
     }
 
     /**
@@ -153,17 +170,45 @@ class Subscription extends Model
     public function scopeActive($query)
     {
         $query->where(function ($query) {
-            $query->whereNull('ends_at')
-                ->orWhere(function ($query) {
-                    $query->onGracePeriod();
+            // Card subscriptions: ends_at is NULL or in grace period
+            $query->where(function ($query) {
+                $query->where(function ($q) {
+                    $q->whereNull('payment_method')
+                      ->orWhere('payment_method', '!=', PaymentMethod::Eft->value);
                 })
-                ->orWhere(function ($query) {
-                    $query->onPausedGracePeriod();
+                ->where(function ($q) {
+                    $q->whereNull('ends_at')
+                      ->orWhere(function ($q) {
+                          $q->onGracePeriod();
+                      })
+                      ->orWhere(function ($q) {
+                          $q->onPausedGracePeriod();
+                      });
                 });
-        })->where('status', '!=', self::Paused);
+            })
+            // EFT subscriptions: now() is within starts_at/ends_at period
+            // Period start = ends_at - interval, so we check: (ends_at - interval) <= now() < ends_at
+            ->orWhere(function ($query) {
+                $query->where('payment_method', PaymentMethod::Eft->value)
+                      ->whereNotNull('ends_at')
+                      ->where('ends_at', '>', Carbon::now())
+                      ->where(function ($q) {
+                          // Calculate period start by subtracting interval from ends_at
+                          // Parse interval from type field (format: "0|monthly" or "1|yearly")
+                          // Use CASE statement to subtract correct interval
+                          $q->whereRaw('DATE_SUB(ends_at, INTERVAL CASE 
+                              WHEN type LIKE "%|daily%" THEN 1 DAY
+                              WHEN type LIKE "%|weekly%" THEN 1 WEEK
+                              WHEN type LIKE "%|monthly%" THEN 1 MONTH
+                              WHEN type LIKE "%|quarterly%" THEN 3 MONTH
+                              WHEN type LIKE "%|yearly%" THEN 1 YEAR
+                              ELSE 1 MONTH END) <= ?', [Carbon::now()]);
+                      });
+            });
+        })->where('status', '!=', self::STATUS_PAUSED);
 
         if (Cashier::$deactivatePastDue) {
-            $query->where('status', '!=', self::PastDue);
+            $query->where('status', '!=', self::STATUS_PAST_DUE);
         }
     }
 
@@ -174,7 +219,7 @@ class Subscription extends Model
      */
     public function pastDue()
     {
-        return $this->status === self::PastDue;
+        return $this->status === self::STATUS_PAST_DUE;
     }
 
     /**
@@ -185,7 +230,7 @@ class Subscription extends Model
      */
     public function scopePastDue($query)
     {
-        $query->where('status', self::PastDue);
+        $query->where('status', self::STATUS_PAST_DUE);
     }
 
     /**
@@ -216,7 +261,7 @@ class Subscription extends Model
      */
     public function paused()
     {
-        return $this->status === self::Paused;
+        return $this->status === self::STATUS_PAUSED;
     }
 
     /**
@@ -227,7 +272,7 @@ class Subscription extends Model
      */
     public function scopePaused($query)
     {
-        $query->where('status', self::Paused);
+        $query->where('status', self::STATUS_PAUSED);
     }
 
     /**
@@ -238,7 +283,7 @@ class Subscription extends Model
      */
     public function scopeNotPaused($query)
     {
-        $query->where('status', '!=', self::Paused);
+        $query->where('status', '!=', self::STATUS_PAUSED);
     }
 
     /**
@@ -532,7 +577,7 @@ class Subscription extends Model
     public function unpause()
     {
         $this->forceFill([
-            'status' => self::Active,
+            'status' => self::STATUS_ACTIVE,
             'ends_at' => null,
             'paused_at' => null,
         ])->save();
@@ -574,7 +619,7 @@ class Subscription extends Model
         $subscription->status = $result['data']['response']['status_text'];
         $subscription->next_bill_at = $result['data']['response']['run_date'];
 
-        if ($subscription->status == self::Deleted && ! $subscription->cancelled_at) {
+        if ($subscription->status == self::STATUS_CANCELED && ! $subscription->cancelled_at) {
             $message = ("Subscription status at Payfast is cancelled but no cancelled_at exists. Adding now() as cancellation date.");
 
             Log::warning($message);
@@ -635,7 +680,7 @@ class Subscription extends Model
         Payfast::cancelSubscription($this->provider_id);
 
         $this->forceFill([
-            'status' => self::Deleted,
+            'status' => self::STATUS_CANCELED,
             'ends_at' => $endsAt,
             'cancelled_at' => now(),
         ])->save();

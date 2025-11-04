@@ -5,8 +5,6 @@ uses(\Tests\Feature\FeatureTestCase::class);
 use Carbon\Carbon;
 use Eugenefvdm\Billing\Enums\InvoiceStatus;
 use Eugenefvdm\Billing\Enums\PaymentMethod;
-use Eugenefvdm\Billing\Invoice;
-use Eugenefvdm\Billing\InvoiceItem;
 use Eugenefvdm\Billing\Services\InvoiceService;
 use Eugenefvdm\Billing\Subscription;
 
@@ -15,10 +13,9 @@ it('shows the paid up to date from the latest paid invoice for an EFT subscripti
     
     // Create EFT subscription
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::parse('2025-12-01'),
     ]);
 
@@ -46,10 +43,9 @@ it('shows the paid up to date from the most recent paid invoice when multiple pa
     
     // Create EFT subscription
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::parse('2025-12-01'),
     ]);
 
@@ -86,10 +82,9 @@ it('shows the current period end when no invoices are paid for an EFT subscripti
     
     // Create EFT subscription
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::parse('2025-12-01'),
     ]);
 
@@ -107,11 +102,10 @@ it('shows the next payment date for a card subscription', function () {
     $user = $this->createBillable();
     
     // Create Card subscription
-    $subscription = $user->subscriptions()->create([
-        'name' => 'default',
+    $subscription = $user->subscriptions()->create([        
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Card,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'next_bill_at' => Carbon::parse('2025-12-01'),
     ]);
     
@@ -127,10 +121,9 @@ it('uses the correct date format in the paid up to message for an EFT subscripti
     
     // Create EFT subscription
     $subscription = $user->subscriptions()->create([
-        'name' => 'default',
         'type' => '0|monthly',
         'payment_method' => PaymentMethod::Eft,
-        'status' => Subscription::Active,
+        'status' => Subscription::STATUS_ACTIVE,
         'ends_at' => Carbon::parse('2025-12-15'),
     ]);
 

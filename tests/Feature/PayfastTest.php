@@ -81,7 +81,7 @@ it('can fetch an active subscription', function () {
 
     $result = Payfast::fetchSubscription("667b8608-38bd-4513-8c49-250ce836876a");
 
-    expect($result['data']['response']['status_text'])->toEqual(Subscription::Active);
+    expect($result['data']['response']['status_text'])->toEqual(Subscription::STATUS_ACTIVE);
 });
 
 it('can fetch a paused subscription', function () {
@@ -109,5 +109,5 @@ it('can fetch a paused subscription', function () {
 
     $result = Payfast::fetchSubscription("1294009b-3778-420f-8ddc-aac0f9c8b477");
 
-    expect($result['data']['response']['status_text'])->toEqual(Subscription::Paused);
+    expect($result['data']['response']['status_text'])->toEqual(Subscription::STATUS_PAUSED);
 });

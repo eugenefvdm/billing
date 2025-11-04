@@ -1,7 +1,6 @@
 <?php
 
 use Eugenefvdm\Billing\Components\Billing;
-use Eugenefvdm\Billing\Http\Controllers\WebhookController;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 

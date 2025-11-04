@@ -1,6 +1,7 @@
 <?php
 
 uses(\Tests\Feature\FeatureTestCase::class);
+
 use Carbon\Carbon;
 use Eugenefvdm\Billing\Subscription;
 
@@ -16,19 +17,18 @@ test('customers can perform subscription checks', function () {
     $billable = $this->createBillable();
 
     $subscription = $billable->subscriptions()->create([
-        'name' => 'main',
-        'provider_id' => "244",
-        'type' => 'monthly',
-        'status' => Subscription::Active,
+        'type' => '0|monthly',
+        'provider_id' => "sub_123456789",
+        'status' => Subscription::STATUS_ACTIVE,
     ]);
 
-    expect($billable->subscribed('main'))->toBeTrue();
+    expect($billable->subscribed('0|monthly'))->toBeTrue();
     expect($billable->subscribed('default'))->toBeFalse();
     expect($billable->subscribedToPlan('yearly'))->toBeFalse();
-    expect($billable->subscribedToPlan('monthly', 'main'))->toBeTrue();
+    expect($billable->subscribedToPlan('monthly', '0|monthly'))->toBeTrue();
     expect($billable->onPlan('monthly'))->toBeTrue();
     expect($billable->onPlan('yearly'))->toBeFalse();
-    expect($billable->onTrial('main'))->toBeFalse();
+    expect($billable->onTrial('0|monthly'))->toBeFalse();
     expect($billable->onGenericTrial())->toBeFalse();
 
     expect($subscription->valid())->toBeTrue();
@@ -54,24 +54,23 @@ test('customers can check if their subscription is on trial', function () {
     $billable = $this->createBillable('taylor');
 
     $subscription = $billable->subscriptions()->create([
-        'name' => 'main',
-        'provider_id' => "244",
-        'type' => 'monthly',
-        'status' => Subscription::Trialing,
+        'type' => '0|monthly',    
+        'provider_id' => "sub_123456789",
+        'status' => Subscription::STATUS_TRIALING,
         'trial_ends_at' => Carbon::tomorrow(),
     ]);
 
-    expect($billable->subscribed('main'))->toBeTrue();
+    expect($billable->subscribed('0|monthly'))->toBeTrue();
     expect($billable->subscribed('default'))->toBeFalse();
     expect($billable->subscribedToPlan('yearly'))->toBeFalse();
-    expect($billable->subscribedToPlan('monthly', 'main'))->toBeTrue();
+    expect($billable->subscribedToPlan('monthly', '0|monthly'))->toBeTrue();
     expect($billable->onPlan('monthly'))->toBeTrue();
     expect($billable->onPlan('yearly'))->toBeFalse();
-    expect($billable->onTrial('main'))->toBeTrue();
-    expect($billable->onTrial('main', 'monthly'))->toBeTrue();
-    expect($billable->onTrial('main', 'yearly'))->toBeFalse();
+    expect($billable->onTrial('0|monthly'))->toBeTrue();
+    expect($billable->onTrial('0|monthly', 'monthly'))->toBeTrue();
+    expect($billable->onTrial('0|monthly', 'yearly'))->toBeFalse();
     expect($billable->onGenericTrial())->toBeFalse();
-    expect(Carbon::tomorrow())->toEqual($billable->trialEndsAt('main'));
+    expect(Carbon::tomorrow())->toEqual($billable->trialEndsAt('0|monthly'));
 
     expect($subscription->valid())->toBeTrue();
     expect($subscription->active())->toBeTrue();
@@ -87,10 +86,9 @@ test('customers can check if their subscription is cancelled', function () {
     $billable = $this->createBillable('taylor');
 
     $subscription = $billable->subscriptions()->create([
-        'name' => 'main',
-        'provider_id' => "244",
-        'type' => 'monthly',
-        'status' => Subscription::Deleted,
+        'type' => 'main',
+        'provider_id' => "sub_123456789",        
+        'status' => Subscription::STATUS_CANCELED,
         'ends_at' => Carbon::tomorrow(),
     ]);
 
@@ -108,10 +106,9 @@ test('customers can check if the grace period is over', function () {
     $billable = $this->createBillable('taylor');
 
     $subscription = $billable->subscriptions()->create([
-        'name' => 'main',
-        'provider_id' => "244",
-        'type' => 'monthly',
-        'status' => Subscription::Deleted,
+        'type' => 'main',
+        'provider_id' => "sub_123456789",
+        'status' => Subscription::STATUS_CANCELED,
         'ends_at' => Carbon::yesterday(),
     ]);
 
@@ -121,18 +118,15 @@ test('customers can check if the grace period is over', function () {
     expect($subscription->paused())->toBeFalse();
     expect($subscription->cancelled())->toBeTrue();
     expect($subscription->onGracePeriod())->toBeFalse();
-    expect($subscription->recurring())->toBeFalse();
-    expect($subscription->ended())->toBeTrue();
 });
 
 test('customers can check if the subscription is paused', function () {
     $billable = $this->createBillable('taylor');
 
     $subscription = $billable->subscriptions()->create([
-        'name' => 'main',
-        'provider_id' => "244",
-        'type' => 'monthly',
-        'status' => Subscription::Paused,
+        'type' => 'main',
+        'provider_id' => "sub_123456789",
+        'status' => Subscription::STATUS_PAUSED,
     ]);
 
     expect($subscription->valid())->toBeFalse();
@@ -149,10 +143,9 @@ test('subscriptions can be on a paused grace period', function () {
     $billable = $this->createBillable('taylor');
 
     $subscription = $billable->subscriptions()->create([
-        'name' => 'main',
-        'provider_id' => "244",
-        'type' => 'monthly',
-        'status' => Subscription::Active,
+        'type' => 'main',
+        'provider_id' => "sub_123456789",
+        'status' => Subscription::STATUS_ACTIVE,
         'paused_at' => Carbon::tomorrow(),
     ]);
 

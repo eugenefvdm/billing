@@ -77,7 +77,7 @@ class WebhookController extends Controller
                 return new Response('Webhook createSubscription/applySubscriptionPayment handled');
             }
 
-            if ($payload['payment_status'] == Subscription::Deleted) {
+            if ($payload['payment_status'] == Subscription::STATUS_CANCELED) {
                 ray("Subscrition cancellation received");
                 $this->cancelSubscription($payload);
 

@@ -2,6 +2,12 @@
 
 All notable changes to `billing` will be documented in this file.
 
+## [v0.4] 2025-11-04
+
+- Deprecate `name` and make sure `type` is consistent. Updated tests to remove `name`
+- Remove `start_date` completely and now solely rely on `ends_at` even for EFTs
+
+
 ## [v0.3] 2025-11-04
 
 - Removed constrain on invoices linked to subscriptions and indexes

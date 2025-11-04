@@ -333,7 +333,6 @@ $subscription = $user->subscriptions()->create([
     'type' => 'monthly', // or 'yearly'
     'payment_method' => PaymentMethod::Eft,
     'status' => 'ACTIVE',
-    'start_date' => now(),
     'ends_at' => now()->addMonth(),
 ]);
 
@@ -418,8 +417,7 @@ $user = User::first();
 $subscription = $user->subscriptions()->create([
     'type' => 'monthly',
     'payment_method' => \Eugenefvdm\Billing\Enums\PaymentMethod::Eft,
-    'status' => 'ACTIVE',
-    'start_date' => now()->subMonth(), // In the past
+    'status' => 'ACTIVE',    
     'ends_at' => now()->subDay(), // Period already ended
 ]);
 

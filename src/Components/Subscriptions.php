@@ -78,7 +78,7 @@ class Subscriptions extends Component
             Log::debug("Subscription will be cancelled with ends_at: {$endsAt->format('jS \o\f F Y')}");
             
             $subscription->forceFill([
-                'status' => Subscription::Deleted,
+                'status' => Subscription::STATUS_CANCELED,
                 'ends_at' => $endsAt,
                 'cancelled_at' => now(),
             ])->save();
@@ -291,8 +291,7 @@ class Subscriptions extends Component
             'name' => 'default',
             'type' => $this->type, // Store full format "0|monthly" for consistency
             'payment_method' => PaymentMethod::Eft,
-            'status' => Subscription::Active,
-            'start_date' => $startsAt,
+            'status' => Subscription::STATUS_ACTIVE,
             'ends_at' => $endsAt,
         ]);
 
