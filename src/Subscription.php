@@ -126,6 +126,11 @@ class Subscription extends Model
      */
     public function valid(): bool
     {
+        // Paused EFT subscriptions waiting for payment should not be considered valid
+        if ($this->status === self::STATUS_PAUSED && $this->payment_method === PaymentMethod::Eft) {
+            return false;
+        }
+        
         return $this->active() || $this->onTrial() || $this->onPausedGracePeriod() || $this->onGracePeriod();
     }
 
@@ -188,33 +193,29 @@ class Subscription extends Model
             })
             // EFT subscriptions: now() is within starts_at/ends_at period
             // Period start = ends_at - interval, so we check: (ends_at - interval) <= now() < ends_at
+            // Which simplifies to: ends_at <= now() + interval (since we already have ends_at > now())
             ->orWhere(function ($query) {
                 $query->where('payment_method', PaymentMethod::Eft->value)
                       ->whereNotNull('ends_at')
                       ->where('ends_at', '>', Carbon::now())
                       ->where(function ($q) {
                           $now = Carbon::now();
-                          // Check each interval type separately (MariaDB-compatible)
-                          $q->where(function ($q) use ($now) {
-                              $q->where('type', 'LIKE', '%|daily%')
-                                ->whereRaw('DATE_SUB(ends_at, INTERVAL 1 DAY) <= ?', [$now]);
-                          })
-                          ->orWhere(function ($q) use ($now) {
-                              $q->where('type', 'LIKE', '%|weekly%')
-                                ->whereRaw('DATE_SUB(ends_at, INTERVAL 1 WEEK) <= ?', [$now]);
-                          })
-                          ->orWhere(function ($q) use ($now) {
-                              $q->where('type', 'LIKE', '%|monthly%')
-                                ->whereRaw('DATE_SUB(ends_at, INTERVAL 1 MONTH) <= ?', [$now]);
-                          })
-                          ->orWhere(function ($q) use ($now) {
-                              $q->where('type', 'LIKE', '%|quarterly%')
-                                ->whereRaw('DATE_SUB(ends_at, INTERVAL 3 MONTH) <= ?', [$now]);
-                          })
-                          ->orWhere(function ($q) use ($now) {
-                              $q->where('type', 'LIKE', '%|yearly%')
-                                ->whereRaw('DATE_SUB(ends_at, INTERVAL 1 YEAR) <= ?', [$now]);
-                          });
+                          $intervals = self::getIntervalDateMappings();
+                          $isFirst = true;
+                          
+                          foreach ($intervals as $interval => $calculatedDate) {
+                              $callback = function ($subQuery) use ($interval, $calculatedDate) {
+                                  $subQuery->where('type', 'LIKE', "%|{$interval}%")
+                                           ->where('ends_at', '<=', $calculatedDate);
+                              };
+                              
+                              if ($isFirst) {
+                                  $q->where($callback);
+                                  $isFirst = false;
+                              } else {
+                                  $q->orWhere($callback);
+                              }
+                          }
                       });
             });
         })->where('status', '!=', self::STATUS_PAUSED);
@@ -222,6 +223,27 @@ class Subscription extends Model
         if (Cashier::$deactivatePastDue) {
             $query->where('status', '!=', self::STATUS_PAST_DUE);
         }
+    }
+
+    /**
+     * Get calculated end dates for each interval type.
+     * 
+     * Calculates what ends_at would be if the period started now().
+     * Used to check if now() is within the subscription period.
+     *
+     * @return array<string, Carbon>
+     */
+    protected static function getIntervalDateMappings(): array
+    {
+        $now = Carbon::now();
+        
+        return [
+            'daily' => $now->copy()->addDay(),
+            'weekly' => $now->copy()->addWeek(),
+            'monthly' => $now->copy()->addMonth(),
+            'quarterly' => $now->copy()->addMonths(3),
+            'yearly' => $now->copy()->addYear(),
+        ];
     }
 
     /**
@@ -1185,7 +1207,7 @@ class Subscription extends Model
                 if ($periodEnd) {
                     return [
                         'date' => $periodEnd,
-                        'message' => "You are paid up to: {$periodEnd->format('jS \o\f F Y')}"
+                        'message' => "You are paid up to the {$periodEnd->format('jS \o\f F Y')}"
                     ];
                 }
             }
@@ -1203,11 +1225,36 @@ class Subscription extends Model
                 'message' => 'No payment information available'
             ];
         } else {
-            // For Card subscriptions, show next payment date
-            if ($this->next_bill_at) {
+            // For Card subscriptions, check if user has paid EFT invoices that extend beyond next_bill_at
+            $latestPaidEftInvoice = $this->billable->invoices()
+                ->where('status', \Eugenefvdm\Billing\Enums\InvoiceStatus::Paid)
+                ->whereHas('subscription', fn($q) => 
+                    $q->where('payment_method', PaymentMethod::Eft)
+                )
+                ->orderByDesc('paid_at')
+                ->first();
+            
+            $eftPeriodEnd = null;
+            if ($latestPaidEftInvoice) {
+                $eftPeriodEnd = $latestPaidEftInvoice->getPeriodEndDate();
+            }
+            
+            // Use EFT period end if it's later than next_bill_at, otherwise use next_bill_at
+            $nextPaymentDate = null;
+            if ($eftPeriodEnd && $eftPeriodEnd->isFuture()) {
+                if (!$this->next_bill_at || $eftPeriodEnd->isAfter($this->next_bill_at)) {
+                    $nextPaymentDate = $eftPeriodEnd;
+                } else {
+                    $nextPaymentDate = $this->next_bill_at;
+                }
+            } elseif ($this->next_bill_at) {
+                $nextPaymentDate = $this->next_bill_at;
+            }
+            
+            if ($nextPaymentDate) {
                 return [
-                    'date' => $this->next_bill_at,
-                    'message' => "The next payment will go off on the {$this->next_bill_at->format('jS \o\f F Y')}."
+                    'date' => $nextPaymentDate,
+                    'message' => "The next card payment will go off on the {$nextPaymentDate->format('jS \o\f F Y')}."
                 ];
             }
             

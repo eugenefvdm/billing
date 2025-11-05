@@ -2,11 +2,18 @@
 
 All notable changes to `billing` will be documented in this file.
 
+## [v0.5] 2025-11-05
+
+- Subscriptions paid via EFT will now only be activated after payment is received
+- The default methods in `billing.php` are now both `card` and `eft`.
+- Fixed date alignment issue when first paying by EFT and then swapping over to card
+- Added messaging that can be dismissed about outstanding payment, payment cancelled, and paying outstanding amounts first before (re)subscribring
+- Simplified the code by removing return URLs and update `.env.example`
+
 ## [v0.4] 2025-11-04
 
 - Deprecate `name` and make sure `type` is consistent. Updated tests to remove `name`
 - Remove `start_date` completely and now solely rely on `ends_at` even for EFTs
-
 
 ## [v0.3] 2025-11-04
 

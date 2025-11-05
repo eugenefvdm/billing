@@ -30,6 +30,10 @@ class Subscriptions extends Component
 
     public $paymentMethod;
 
+    public $dismissedOutstandingInvoice = false;
+
+    public $dismissedPaymentMethodError = false;
+
     private $password;
 
     protected $listeners = [
@@ -151,6 +155,23 @@ class Subscriptions extends Component
     }
 
     /**
+     * Dismiss outstanding invoice message
+     */
+    public function dismissOutstandingInvoice()
+    {
+        $this->dismissedOutstandingInvoice = true;
+    }
+
+    /**
+     * Dismiss payment method error message
+     */
+    public function dismissPaymentMethodError()
+    {
+        $this->dismissedPaymentMethodError = true;
+        $this->resetErrorBag('paymentMethod');
+    }
+
+    /**
      * Displays the Payfast modal with all the correct form values or creates EFT subscription
      */
     public function displayCreateSubscription()
@@ -158,6 +179,10 @@ class Subscriptions extends Component
         ray('displayCreateSubscription has been called');
         ray($this->type);
         ray($this->paymentMethod);
+
+        // Reset payment method error dismissal so validation errors can reappear
+        $this->dismissedPaymentMethodError = false;
+        $this->dismissedOutstandingInvoice = false;
 
         // Validate payment method selection
         $availableMethods = $this->user->availablePaymentMethods();
@@ -285,11 +310,11 @@ class Subscriptions extends Component
         Log::debug("Subscription period will be FROM: {$startsAt->format('jS \o\f F Y')} TO: {$endsAt->format('jS \o\f F Y')}");
         Log::debug("Current date/time: " . now()->format('jS \o\f F Y \a\t H:i:s'));
 
-        // Create EFT subscription
+        // Create EFT subscription in paused state - will be activated when payment is received
         $subscription = $this->user->subscriptions()->create([
             'type' => $this->type, // Store full format "0|monthly" for consistency
             'payment_method' => PaymentMethod::Eft,
-            'status' => Subscription::STATUS_ACTIVE,
+            'status' => Subscription::STATUS_PAUSED,
             'ends_at' => $endsAt,
         ]);
 

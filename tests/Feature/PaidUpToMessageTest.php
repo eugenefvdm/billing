@@ -35,7 +35,7 @@ it('shows the paid up to date from the latest paid invoice for an EFT subscripti
     
     // Should show paid up to Dec 1 (from paid invoice #1), not Jan 1 (from unpaid invoice #2)
     expect($paidUpToInfo['date']->format('Y-m-d'))->toBe('2025-12-01');
-    expect($paidUpToInfo['message'])->toBe('You are paid up to: 1st of December 2025');
+    expect($paidUpToInfo['message'])->toBe('You are paid up to the 1st of December 2025');
 });
 
 it('shows the paid up to date from the most recent paid invoice when multiple paid invoices exist for an EFT subscription', function () {
@@ -74,7 +74,7 @@ it('shows the paid up to date from the most recent paid invoice when multiple pa
     
     // Should show paid up to Jan 1 (from most recent paid invoice #2), not Feb 1
     expect($paidUpToInfo['date']->format('Y-m-d'))->toBe('2026-01-01');
-    expect($paidUpToInfo['message'])->toBe('You are paid up to: 1st of January 2026');
+    expect($paidUpToInfo['message'])->toBe('You are paid up to the 1st of January 2026');
 });
 
 it('shows the current period end when no invoices are paid for an EFT subscription', function () {
@@ -113,7 +113,7 @@ it('shows the next payment date for a card subscription', function () {
     
     // Should show next payment date for Card subscriptions
     expect($paidUpToInfo['date']->format('Y-m-d'))->toBe('2025-12-01');
-    expect($paidUpToInfo['message'])->toBe('The next payment will go off on the 1st of December 2025.');
+    expect($paidUpToInfo['message'])->toBe('The next card payment will go off on the 1st of December 2025.');
 });
 
 it('uses the correct date format in the paid up to message for an EFT subscription', function () {
@@ -137,6 +137,6 @@ it('uses the correct date format in the paid up to message for an EFT subscripti
     $paidUpToInfo = $subscription->getPaidUpToInfo();
     
     // Should format date correctly (15th not 15st)
-    expect($paidUpToInfo['message'])->toBe('You are paid up to: 15th of December 2025');
+    expect($paidUpToInfo['message'])->toBe('You are paid up to the 15th of December 2025');
 });
 

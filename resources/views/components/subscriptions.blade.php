@@ -11,9 +11,28 @@
         <div class="max-w-xl text-sm text-gray-600 dark:text-gray-400">
 
             <!-- Check if the current logged in user is subscribed to a plan -->
+            @php
+                $subscription = $user->subscription();
+                $isPausedEftWaitingPayment = $subscription && 
+                    $subscription->status === \Eugenefvdm\Billing\Subscription::STATUS_PAUSED && 
+                    $subscription->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
+            @endphp
             @if (!$user->subscribed())
-                {{-- Trial --}}
-                @if ($user->onGenericTrial())
+                @if ($isPausedEftWaitingPayment)
+                    {{-- Paused EFT subscription waiting for payment --}}
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                        Waiting for payment and ITN
+                    </h3>
+                    <div class="mt-3 max-w-xl text-sm text-gray-600 dark:text-gray-400">
+                        <p>
+                            Your extension to {{ $subscription->planNameWithInterval() }} is pending payment.
+                            @if ($subscription->ends_at)
+                                The current subscription will end at {{ $subscription->starts_at->format('jS \o\f F Y') }}.
+                            @endif                            
+                        </p>
+                    </div>
+                @elseif ($user->onGenericTrial())
+                    {{-- Trial --}}
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                         You are currently on trial till the {{ $user->trialEndsAt()->format('jS \o\f F Y') }}
                     </h3>
@@ -97,7 +116,10 @@
                 $subscription = $user->subscription();
                 $hasSubscription = $subscription !== null;
                 $isOnGracePeriod = $hasSubscription && !is_null($subscription->cancelled_at) && $subscription->onGracePeriod();
-                $isActiveSubscription = $hasSubscription && !$isOnGracePeriod && !$subscription->ended();
+                $isPausedEftWaitingPayment = $hasSubscription && 
+                    $subscription->status === \Eugenefvdm\Billing\Subscription::STATUS_PAUSED && 
+                    $subscription->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
+                $isActiveSubscription = $hasSubscription && !$isOnGracePeriod && !$subscription->ended() && !$isPausedEftWaitingPayment;
             @endphp
             @if ($isActiveSubscription)
                 @php
@@ -167,20 +189,38 @@
                         </div>
                     </div>
                     
-                    @if($this->hasOutstandingInvoices)
-                        <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                            <p class="text-sm text-yellow-800 dark:text-yellow-200">
+                    @if($this->hasOutstandingInvoices && !$dismissedOutstandingInvoice)
+                        <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md relative">
+                            <button 
+                                wire:click="dismissOutstandingInvoice"
+                                class="absolute top-1/2 right-2 -translate-y-1/2 text-yellow-600 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-200"
+                                aria-label="Close">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                            <p class="text-sm text-yellow-800 dark:text-yellow-200 pr-6">
                                 {{ __('You have an outstanding invoice.') }}
                             </p>
                         </div>
                     @endif
                     
                     @error('paymentMethod')
-                        <div class="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                            <p class="text-sm text-red-800 dark:text-red-200">
-                                {{ $message }}
-                            </p>
-                        </div>
+                        @if(!$dismissedPaymentMethodError)
+                            <div class="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md relative">
+                                <button 
+                                    wire:click="dismissPaymentMethodError"
+                                    class="absolute top-1/2 right-2 -translate-y-1/2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+                                    aria-label="Close">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                                <p class="text-sm text-red-800 dark:text-red-200 pr-6">
+                                    {{ $message }}
+                                </p>
+                            </div>
+                        @endif
                     @enderror
                 </div>
             @endif

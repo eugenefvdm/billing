@@ -5,43 +5,65 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/payfast/return', function() {
-    Log::debug("Payfast return route hit");
-    // If we have an invoice UUID in the session, redirect to it
-    $invoiceUuid = session('invoice_uuid');
-    $returnUrl = session('payment_return_url', '/');
+    Log::info("=== PAYFAST RETURN ROUTE HIT ===", [
+        'full_url' => request()->fullUrl(),
+        'query_params' => request()->query(),
+        'all_params' => request()->all(),
+        'referer' => request()->headers->get('referer'),
+    ]);
     
-    if ($invoiceUuid) {
-        session()->forget('invoice_uuid');
-        return redirect()->route('invoices.show', $invoiceUuid)
-            ->with('success', 'Payment completed successfully.');
+    // Try return_to query parameter first (we append this to return_url)
+    $returnUrl = request()->query('return_to');
+    
+    // Fallback: try custom_str4 (in case Payfast returns it)
+    if (!$returnUrl) {
+        $returnUrl = request()->query('custom_str4');
+        Log::info("Trying custom_str4 fallback", ['custom_str4' => $returnUrl]);
     }
     
-    session()->forget('payment_return_url');
-    return redirect($returnUrl)->with('success', 'Payment completed successfully.');
-});
-
-Route::get('/payfast/cancel', function() {
-    // If we have an invoice UUID in the session, redirect back to it
-    $invoiceUuid = session('invoice_uuid');
-    $returnUrl = session('payment_return_url', '/');
-    
-    if ($invoiceUuid) {
-        session()->forget('invoice_uuid');
-        return redirect()->route('invoices.show', $invoiceUuid)
-            ->with('info', 'Payment was cancelled.');
+    if ($returnUrl) {
+        $decodedUrl = urldecode($returnUrl);
+        Log::info("Redirecting to return URL after successful payment", [
+            'return_url' => $decodedUrl,
+            'original_encoded' => $returnUrl,
+        ]);
+        return redirect($decodedUrl)->with('success', 'Payment completed successfully.');
     }
     
-    session()->forget('payment_return_url');
-    return redirect($returnUrl)->with('info', 'Payment was cancelled.');
+    Log::warning("No return URL found, redirecting to home", [
+        'available_params' => request()->all(),
+    ]);
+    return redirect('/')->with('success', 'Payment completed successfully.');
 });
 
 Route::post('/payfast/notify', 'Eugenefvdm\Billing\Http\Controllers\WebhookController');
 
 Route::post('/payfast/webhook', 'Eugenefvdm\Billing\Http\Controllers\WebhookController');
 
+// Debug route to test if webhook endpoint is accessible
+Route::get('/payfast/notify/test', function() {
+    Log::info("=== PAYFAST WEBHOOK TEST ENDPOINT HIT ===", [
+        'full_url' => request()->fullUrl(),
+        'method' => request()->method(),
+        'ip' => request()->ip(),
+        'headers' => request()->headers->all(),
+    ]);
+    
+    return response()->json([
+        'status' => 'ok',
+        'message' => 'Webhook endpoint is accessible',
+        'url' => request()->fullUrl(),
+        'test_mode_itn_url' => config('billing.payfast.test_mode_itn_url'),
+        'test_mode' => config('billing.payfast.test_mode'),
+        'expected_full_url' => (config('billing.payfast.test_mode') && config('billing.payfast.test_mode_itn_url'))
+            ? config('billing.payfast.test_mode_itn_url') . '/payfast/notify'
+            : config('app.url') . '/payfast/notify',
+    ]);
+});
+
 Route::middleware(['auth','web'])
-    ->get('/settings/billing', Billing::class)
-    ->name('settings.billing');
+    ->get('/user/billing', Billing::class)
+    ->name('user.billing');
 
 // Invoice routes (no auth required - secured by UUID)
 Route::get('/invoices/{uuid}', function ($uuid) {
@@ -143,11 +165,8 @@ Route::get('/invoices/{uuid}/pay', function ($uuid) {
         // Generate payment ID (similar to Order::generate() but without requiring auth)
         $paymentId = $invoice->id . '-' . \Carbon\Carbon::now()->format('YmdHis');
         
-        // Store invoice UUID and return URL in session for return/cancel redirects
-        session([
-            'invoice_uuid' => $invoice->uuid,
-            'payment_return_url' => request()->headers->get('referer', '/'),
-        ]);
+        // Get return URL (where user came from)
+        $returnUrl = request()->headers->get('referer', config('app.url'));
         
         // Generate payment form data
         $data = [
@@ -161,22 +180,39 @@ Route::get('/invoices/{uuid}/pay', function ($uuid) {
             'amount' => $amount,
             'item_name' => $item['name'],
             'item_description' => $item['description'],
-            // Add invoice identifier for webhook processing
+            // Custom fields - these get returned by Payfast to return_url/cancel_url
             'custom_str1' => $billable->getMorphClass(),
             'custom_int1' => $billable->getKey(),
             'custom_str3' => 'invoice:' . $invoice->uuid,
+            'custom_str4' => $returnUrl, // Return URL to redirect back to
+            'custom_str5' => $invoice->uuid, // Invoice UUID for easy access
         ];
         
-        // Add URLs
+        // Add URLs - all hardcoded to standard routes
         $baseUrl = config('app.url');
-        $data['return_url'] = $baseUrl . config('billing.payfast.return_url');
-        $data['cancel_url'] = $baseUrl . config('billing.payfast.cancel_url');
+        $returnUrlParam = urlencode($returnUrl);
+        $data['return_url'] = $baseUrl . '/payfast/return?return_to=' . $returnUrlParam;
+        $data['cancel_url'] = route('invoices.cancel', $invoice->uuid);
         
-        // ITN (webhook) needs ngrok URL in test mode
-        $itnUrl = config('billing.payfast.test_mode') && config('billing.payfast.test_mode_itn_url')
-            ? config('billing.payfast.test_mode_itn_url')
+        // ITN (webhook) auto-detects ngrok URL in test mode
+        $testModeItnUrl = config('billing.payfast.test_mode_itn_url');
+        $isTestMode = config('billing.payfast.test_mode');
+        $itnUrl = ($isTestMode && !empty($testModeItnUrl))
+            ? $testModeItnUrl
             : $baseUrl;
-        $data['notify_url'] = $itnUrl . config('billing.payfast.notify_url');
+        $data['notify_url'] = $itnUrl . '/payfast/notify';
+        
+        Log::info("Invoice #{$invoice->id} payment URLs configured", [
+            'return_url' => $data['return_url'],
+            'cancel_url' => $data['cancel_url'],
+            'notify_url' => $data['notify_url'],
+            'test_mode' => $isTestMode,
+            'test_mode_itn_url' => $testModeItnUrl,
+            'itn_base_url' => $itnUrl,
+            'app_url' => $baseUrl,
+            'return_to_param' => $returnUrlParam,
+            'original_return_url' => $returnUrl,
+        ]);
         
         // Generate signature
         $signature = $payfast->generateApiSignature($data, $payfast->passphrase());
@@ -200,3 +236,49 @@ Route::get('/invoices/{uuid}/pay', function ($uuid) {
         throw $e;
     }
 })->name('invoices.pay');
+
+Route::get('/invoices/{uuid}/cancel', function ($uuid) {
+    Log::info("=== INVOICE PAYMENT CANCELLED ===", [
+        'uuid' => $uuid,
+        'url' => request()->fullUrl(),
+        'ip' => request()->ip(),
+        'query_params' => request()->query->all(),
+    ]);
+    
+    try {
+        $invoice = \Eugenefvdm\Billing\Invoice::where('uuid', $uuid)->firstOrFail();
+        Log::info("Invoice found for cancellation", [
+            'invoice_id' => $invoice->id,
+            'uuid' => $invoice->uuid,
+        ]);
+        
+        // Try to get return URL from query parameter (if Payfast passes it)
+        // Otherwise fall back to billing page
+        $returnUrl = request()->query('custom_str4');
+        
+        Log::info("Setting payment_cancelled flash message", [
+            'return_url' => $returnUrl,
+            'fallback_route' => route('user.billing'),
+        ]);
+        
+        if ($returnUrl) {
+            Log::info("Redirecting to return URL with payment_cancelled query param");
+            // Append query parameter instead of using flash
+            $separator = strpos($returnUrl, '?') !== false ? '&' : '?';
+            return redirect($returnUrl . $separator . 'payment_cancelled=1')->with('payment_cancelled', 'Payment cancelled');
+        }
+        
+        // Fallback: redirect to billing page
+        Log::info("Redirecting to billing page with payment_cancelled query param");
+        return redirect()->route('user.billing', ['payment_cancelled' => 1])->with('payment_cancelled', 'Payment cancelled');
+    } catch (\Exception $e) {
+        Log::error("Error handling invoice cancellation", [
+            'uuid' => $uuid,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+        
+        Log::info("Redirecting to billing page (error fallback) with payment_cancelled query param");
+        return redirect()->route('user.billing', ['payment_cancelled' => 1])->with('payment_cancelled', 'Payment cancelled');
+    }
+})->name('invoices.cancel');

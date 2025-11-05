@@ -3,8 +3,8 @@
 namespace Eugenefvdm\Billing\Components;
 
 use Eugenefvdm\Billing\Enums\PaymentMethod;
-use Eugenefvdm\Billing\Events\InvoicePaid;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class Invoices extends Component
@@ -12,6 +12,11 @@ class Invoices extends Component
     public $user;
 
     public $invoices;
+
+    #[Url(as: 'payment_cancelled', history: true, keep: false)]
+    public $paymentCancelled = false;
+
+    public $dismissedPaymentCancelled = false;
 
     protected $listeners = [
         'refreshComponent' => 'refreshInvoices',
@@ -21,11 +26,26 @@ class Invoices extends Component
     public function mount()
     {
         $this->user = Auth::user();
+        
+        // Reset dismissal state when payment_cancelled URL parameter is present
+        if ($this->paymentCancelled) {
+            $this->dismissedPaymentCancelled = false;
+        }
     }
 
     public function refreshInvoices()
     {
         $this->user->refresh();
+    }
+
+    /**
+     * Dismiss payment cancelled message
+     */
+    public function dismissPaymentCancelled()
+    {
+        $this->dismissedPaymentCancelled = true;
+        // Clear the URL parameter by setting paymentCancelled to false
+        $this->paymentCancelled = false;
     }
 
     /**

@@ -120,17 +120,21 @@ PAYFAST_MERCHANT_KEY_TEST=
 PAYFAST_PASSPHRASE_TEST=
 ```
 
-For localhost testing, you'll need `Ngrok` or `Expose` and then add the callback URL:
+For localhost testing with PayFast webhooks, you'll need `Ngrok` or `Expose` and then add the ITN URL:
 
 ```bash
-PAYFAST_TEST_MODE_CALLBACK_URL=
+PAYFAST_TEST_MODE_ITN_URL=https://your-ngrok-url.ngrok-free.app
 ```
 
-Here is an example Ngrok command to run when working on locahost.
+Here is an example Ngrok command to run when working on localhost:
 
 ```bash
 ngrok http https://myapp.test --host-header=rewrite --domain=ngrok-supplied-url.ngrok-free.app
 ```
+
+**Note**: The package automatically handles URLs:
+- **Return/Cancel URLs**: Always redirect to `/payfast/return` and `/payfast/cancel` which route back to billing
+- **Notify URL (ITN)**: Automatically uses your ngrok URL in test mode (if `PAYFAST_TEST_MODE_ITN_URL` is set), otherwise uses your production URL
 
 ## Livewire setup
 

@@ -43,22 +43,33 @@ class Payfast implements BillingProvider
             //            Log::debug("In Payfast API constructor, test_mode: $this->test_mode, URL: $this->url");
         }
 
-        // Return and cancel URLs use app URL
+        // URLs are hardcoded - return and cancel always go to billing, notify auto-detects ngrok
         $baseUrl = config('app.url');
-        $this->returnUrl = $baseUrl . $client['return_url'];
-        $this->cancelUrl = $baseUrl . $client['cancel_url'];
+        $this->returnUrl = $baseUrl . '/payfast/return';
+        $this->cancelUrl = $baseUrl . '/payfast/cancel';
         
-        // ITN (notify URL) uses ngrok URL in test mode for webhooks
-        $itnUrl = $this->test_mode && config('billing.payfast.test_mode_itn_url')
-            ? config('billing.payfast.test_mode_itn_url')
+        // ITN (notify URL) auto-detects ngrok URL in test mode for webhooks
+        $testModeItnUrl = config('billing.payfast.test_mode_itn_url');
+        $itnUrl = ($this->test_mode && !empty($testModeItnUrl))
+            ? $testModeItnUrl
             : $baseUrl;
-        $this->notifyUrl = $itnUrl . $client['notify_url'];
+        $this->notifyUrl = $itnUrl . '/payfast/notify';
 
         $this->urlCollection = [
             'return_url' => $this->returnUrl,
             'cancel_url' => $this->cancelUrl,
             'notify_url' => $this->notifyUrl,
         ];
+        
+        Log::info("Payfast URLs configured for subscriptions", [
+            'return_url' => $this->returnUrl,
+            'cancel_url' => $this->cancelUrl,
+            'notify_url' => $this->notifyUrl,
+            'test_mode' => $this->test_mode,
+            'test_mode_itn_url' => config('billing.payfast.test_mode_itn_url'),
+            'itn_base_url' => $itnUrl,
+            'app_url' => $baseUrl,
+        ]);
     }
 
     public function cancelSubscription($provider_id)
@@ -104,12 +115,6 @@ class Payfast implements BillingProvider
 
         $data = array_merge($data, $this->urlCollection);
 
-        //        ray($data)->pause();
-
-        //        if ($mergeFields) {
-        //            $data = array_merge($data, $mergeFields);
-        //        }
-
         $message = "Payfast Create Custom Payment was invoked with these merged values and will now wait for user input:";
 
         $this->debug($message, 'createCustomPayment');
@@ -119,8 +124,7 @@ class Payfast implements BillingProvider
 
         $pfData = array_merge($data, ["signature" => $signature]);
 
-        // If in testing mode make use of either sandbox.payfast.co.za or www.payfast.co.za
-        //        $testingMode = true;
+        // If in testing mode make use of either sandbox.payfast.co.za or www.payfast.co.za    
         $pfHost = $this->test_mode ? 'sandbox.payfast.co.za' : 'www.payfast.co.za';
         $htmlForm = '<form action="https://' . $pfHost . '/eng/process" method="post">';
         foreach ($data as $name => $value) {
@@ -128,12 +132,6 @@ class Payfast implements BillingProvider
         }
         $htmlForm .= '<input type="submit" value="Pay Now" /></form>';
         echo $htmlForm;
-
-        //        return $pfData;
-
-        //        $paymentIdentifier = $this->generatePaymentIdentifier($pfData);
-
-
     }
 
     /**

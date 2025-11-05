@@ -4,6 +4,7 @@ namespace Eugenefvdm\Billing;
 
 use Carbon\Carbon;
 use Eugenefvdm\Billing\Enums\InvoiceStatus;
+use Eugenefvdm\Billing\Enums\PaymentMethod;
 use Eugenefvdm\Billing\Events\InvoicePaid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -150,6 +151,8 @@ class Invoice extends Model
             $this->loadMissing('subscription');
             $subscription = $this->subscription;
             Log::debug("Invoice belongs to subscription ID: {$subscription->id}");
+            Log::debug("Subscription status: {$subscription->status}");
+            Log::debug("Subscription payment_method: {$subscription->payment_method->value}");
             Log::debug("Subscription ends_at date: " . ($subscription->ends_at ? $subscription->ends_at->format('jS \o\f F Y') : 'NULL'));
             Log::debug("Subscription ends_at is in the future: " . ($subscription->ends_at && $subscription->ends_at->isFuture() ? 'YES' : 'NO'));
             Log::debug("Subscription ends_at is in the past: " . ($subscription->ends_at && $subscription->ends_at->isPast() ? 'YES' : 'NO'));
@@ -170,6 +173,23 @@ class Invoice extends Model
 
         Log::info($message);
         Log::debug("✓ Invoice status updated to: Paid");
+
+        // Activate EFT subscription when payment is received
+        if ($hasSubscription && $subscription->payment_method === PaymentMethod::Eft) {
+            if ($subscription->status === Subscription::STATUS_PAUSED) {
+                Log::debug("=== ACTIVATING EFT SUBSCRIPTION ===");
+                Log::debug("Activating paused EFT subscription ID: {$subscription->id} after invoice payment");
+                
+                $subscription->update([
+                    'status' => Subscription::STATUS_ACTIVE,
+                ]);
+                
+                Log::debug("✓ EFT subscription activated - status changed to ACTIVE");
+                Log::info("Activated EFT subscription {$subscription->id} after invoice {$this->id} payment");
+            } else {
+                Log::debug("Subscription is not paused (status: {$subscription->status}), skipping activation");
+            }
+        }
 
         // Dispatch event that Livewire components can listen to
         event(new InvoicePaid($this));

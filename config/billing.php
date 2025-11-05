@@ -3,7 +3,7 @@
 use App\Models\User;
 
 return [
-    'default_payment_methods' => ['card'], // ['card', 'eft']
+    'default_payment_methods' => ['card', 'eft'],
 
     'billables' => [
         'user' => [
@@ -64,11 +64,8 @@ return [
         'merchant_id_test' => env('PAYFAST_MERCHANT_ID_TEST'),
         'merchant_key_test' => env('PAYFAST_MERCHANT_KEY_TEST'),
         'passphrase_test' => env('PAYFAST_PASSPHRASE_TEST'),
-        'test_mode_itn_url' => env('PAYFAST_TEST_MODE_ITN_URL'), // Only needed in test mode for ngrok
+        'test_mode_itn_url' => env('PAYFAST_TEST_MODE_ITN_URL'),
         'debug' => env('PAYFAST_DEBUG', false),
-        'return_url' => env('PAYFAST_RETURN_URL', '/payfast/return'),
-        'cancel_url' => env('PAYFAST_CANCEL_URL', '/payfast/cancel'),
-        'notify_url' => env('PAYFAST_NOTIFY_URL', '/payfast/notify'),        
     ],
 
     'eft' => [

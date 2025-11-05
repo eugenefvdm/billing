@@ -113,10 +113,6 @@ class BillingServiceProvider extends ServiceProvider
                 'merchant_id_test' => config('billing.payfast.merchant_id_test'),
                 'merchant_key_test' => config('billing.payfast.merchant_key_test'),
                 'passphrase_test' => config('billing.payfast.passphrase_test'),
-
-                'return_url' => config('billing.payfast.return_url'),
-                'cancel_url' => config('billing.payfast.cancel_url'),
-                'notify_url' => config('billing.payfast.notify_url'),
             ]);
         });
     }
