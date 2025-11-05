@@ -2,7 +2,7 @@
 
 All notable changes to `billing` will be documented in this file.
 
-## [v0.5] 2025-11-05
+## [v0.4] 2025-11-05
 
 - Subscriptions paid via EFT will now only be activated after payment is received
 - The default methods in `billing.php` are now both `card` and `eft`.
