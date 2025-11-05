@@ -1,4 +1,4 @@
-## About Payfast and EFT subscriptions billing
+## Payfast and EFT subscriptions billing
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/eugenefvdm/billing) ![Tests](https://github.com/eugenefvdm/billing/actions/workflows/tests.yml/badge.svg)
  ![GitHub](https://img.shields.io/github/license/eugenefvdm/billing)
  [![Downloads](https://img.shields.io/packagist/dt/eugenefvdm/billing.svg)](https://packagist.org/packages/eugenefvdm/billing)
