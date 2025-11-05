@@ -215,6 +215,25 @@ class Subscriptions extends Component
         if ($this->user->subscribed() && $this->user->subscription()->onGracePeriod()) {
             $billingDate = $this->user->subscription()->ends_at->addDay()->format('Y-m-d');
         }
+        
+        // If no billing date set yet, check for cancelled EFT subscription with future ends_at
+        // This handles the case where user cancelled EFT subscription and is now signing up with credit card
+        if (! isset($billingDate)) {
+            $cancelledEftSubscription = $this->user->subscriptions()
+                ->where('payment_method', PaymentMethod::Eft)
+                ->where('status', Subscription::STATUS_CANCELED)
+                ->whereNotNull('ends_at')
+                ->where('ends_at', '>', now())
+                ->orderByDesc('ends_at')
+                ->first();
+            
+            if ($cancelledEftSubscription) {
+                Log::debug("Creating credit card subscription after cancelled EFT subscription");
+                Log::debug("Cancelled EFT subscription ends_at: {$cancelledEftSubscription->ends_at->format('jS \o\f F Y')}");
+                Log::debug("Setting billing date to continue from cancelled subscription's end date");
+                $billingDate = $cancelledEftSubscription->ends_at->addDay()->format('Y-m-d');
+            }
+        }
 
         if (! isset($billingDate)) {
             $billingDate = \Carbon\Carbon::now()->format('Y-m-d');
@@ -288,15 +307,33 @@ class Subscriptions extends Component
         }
 
         // Calculate start date
-        // If resubscribing EFT after cancellation, continue from where the old EFT subscription ended
-        // This prevents creating duplicate periods for time already paid
-        // Payfast subscriptions are handled separately and won't affect this logic
+        // Check for any cancelled subscription (credit card or EFT) with a future ends_at date
+        // This prevents creating duplicate periods for time already paid when resubscribing
         $startsAt = now();
+        
+        // First check for cancelled EFT subscription
         if ($existingEftSubscription && $existingEftSubscription->ends_at && $existingEftSubscription->ends_at->isFuture()) {
             Log::debug("Resubscribing EFT: Found cancelled EFT subscription ending in the future");
             Log::debug("Old EFT subscription ends_at: {$existingEftSubscription->ends_at->format('jS \o\f F Y')}");
             Log::debug("Starting new EFT subscription from old subscription's end date to continue seamlessly");
             $startsAt = $existingEftSubscription->ends_at->copy();
+        } else {
+            // Check for cancelled credit card subscription with future ends_at
+            $cancelledCardSubscription = $this->user->subscriptions()
+                ->where('payment_method', '!=', PaymentMethod::Eft)
+                ->where('status', Subscription::STATUS_CANCELED)
+                ->whereNotNull('ends_at')
+                ->where('ends_at', '>', now())
+                ->orderByDesc('ends_at')
+                ->first();
+            
+            if ($cancelledCardSubscription) {
+                Log::debug("Resubscribing after cancellation: Found cancelled credit card subscription ending in the future");
+                Log::debug("Cancelled subscription ID: {$cancelledCardSubscription->id}");
+                Log::debug("Cancelled subscription ends_at: {$cancelledCardSubscription->ends_at->format('jS \o\f F Y')}");
+                Log::debug("Starting new EFT subscription from cancelled subscription's end date to continue seamlessly");
+                $startsAt = $cancelledCardSubscription->ends_at->copy();
+            }
         }
         
         $endsAt = $interval === 'monthly' 

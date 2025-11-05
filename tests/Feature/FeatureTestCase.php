@@ -58,6 +58,7 @@ abstract class FeatureTestCase extends TestCase
         return [
             BillingServiceProvider::class,
             LivewireServiceProvider::class,
+            \Barryvdh\DomPDF\ServiceProvider::class,
         ];
     }
 }
