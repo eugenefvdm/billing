@@ -9,6 +9,7 @@ All notable changes to `billing` will be documented in this file.
 - Fixed date alignment issue when first paying by EFT and then swapping over to card
 - Added messaging that can be dismissed about outstanding payment, payment cancelled, and paying outstanding amounts first before (re)subscribring
 - Simplified the code by removing return URLs and update `.env.example`
+- Removed more Paddle code and updated README.md with more concise instructions
 
 ## [v0.4] 2025-11-04
 
