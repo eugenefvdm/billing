@@ -21,33 +21,22 @@ Install the package via composer:
 composer require eugenefvdm/billing
 ```
 
-## Publish Configuration and Views
+## Config file and views
 
-Publish the config file with:
+Optional: Publish the config file:
 ```bash
 php artisan vendor:publish --provider="Eugenefvdm\Billing\BillingServiceProvider" --tag="config"
 ```
 
-Publish the Success and Cancelled views and the Livewire components for subscriptions and receipts.
+Optional: Publish the views:
 ```bash
 php artisan vendor:publish --provider="Eugenefvdm\Billing\BillingServiceProvider" --tag="views"
 ```
 
-Add this to app.css:
+Add this to `/resources/css/app.css` to have the Tailwind CSS classes compiled properly:
 
 ```CSS
 @source '../../vendor/eugenefvdm/billing/resources/views/**/*.blade.php';
-```
-
-These files are:
-```bash
-banner.blade.php
-billing.blade.php
-cancel.blade.php
-pricing.blade.php
-receipts.blade.php
-subscriptions.blade.php
-success.blade.php
 ```
 
 ## Setup
@@ -58,34 +47,17 @@ Add the `Billable()` trait to your user model.
 use Eugenefvdm\Payfast\Billable;
 
 class User extends Authenticatable
-{
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+{    
     use Billable;
 ```
 
-## In your header
+## In your head section of your HTML you'll need this snippet:
 
 ```php
 @payfastScripts
 ```
 
-If you're using Flux, add this to `/resources/views/partials/head.blade.php` some like below `@fluxAppearance`.
-
-This directive outputs the PayFast onsite payment script (test or production based on config) and includes the `payfast-event-listener` stack for payment events.
-
-To include the pricing component on a page, do this:
-
-In your header:
-```php
-@vite(['resources/css/app.css', 'resources/js/app.js'])
-```
-
-In your view:
-
-```php
-@include('billing::components.pricing')
-```
+If you're using Flux, add this to `/resources/views/partials/head.blade.php` say like below `@fluxAppearance`.
 
 ## Migrations
 
@@ -99,19 +71,7 @@ php artisan migrate
 
 See `config/billing.php`.
 
-The top part of `billing.php` is based on [Laravel Spark Paddle's config](https://spark.laravel.com/docs/spark-paddle/configuration#defining-subscription-plans).
-
-The second part of `billing.php` is the Payfast specific configuration.
-
-You'll need at least these three in the `.env` file:
-
-```bash
-PAYFAST_MERCHANT_ID=
-PAYFAST_MERCHANT_KEY=
-PAYFAST_PASSPHRASE=
-```
-
-For Sandbox mode, you'll need:
+For testing you'll need:
 
 ```bash
 PAYFAST_TEST_MODE=true
@@ -120,7 +80,15 @@ PAYFAST_MERCHANT_KEY_TEST=
 PAYFAST_PASSPHRASE_TEST=
 ```
 
-For localhost testing with PayFast webhooks, you'll need `Ngrok` or `Expose` and then add the ITN URL:
+For live you'll need:
+
+```bash
+PAYFAST_MERCHANT_ID=
+PAYFAST_MERCHANT_KEY=
+PAYFAST_PASSPHRASE=
+```
+
+For localhost testing and to receive the Payfast ITN, you'll need `Ngrok` or `Expose`, and then add it's URL:
 
 ```bash
 PAYFAST_TEST_MODE_ITN_URL=https://your-ngrok-url.ngrok-free.app
@@ -132,9 +100,20 @@ Here is an example Ngrok command to run when working on localhost:
 ngrok http https://myapp.test --host-header=rewrite --domain=ngrok-supplied-url.ngrok-free.app
 ```
 
-**Note**: The package automatically handles URLs:
-- **Return/Cancel URLs**: Always redirect to `/payfast/return` and `/payfast/cancel` which route back to billing
-- **Notify URL (ITN)**: Automatically uses your ngrok URL in test mode (if `PAYFAST_TEST_MODE_ITN_URL` is set), otherwise uses your production URL
+## Pricing component
+
+To include the pricing component on a page, do this:
+
+In your header:
+```php
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+```
+
+In your view:
+
+```php
+@include('billing::components.pricing')
+```
 
 ## Livewire setup
 
@@ -152,24 +131,6 @@ ngrok http https://myapp.test --host-header=rewrite --domain=ngrok-supplied-url.
 ```
 
 The Livewire views are modelled to blend into a [Laravel Jetstream](https://jetstream.laravel.com) user profile page.
-
-#### Adding a billing menu
-
-In `app.blade.php` below in the Account Management sections (e.g., below profile):
-
-```html
-<x-dropdown-link href="/user/billing">
-    Billing
-</x-dropdown-link>
-```
-
-Also look for the responsive part and add this:
-
-```html
-<x-responsive-nav-link href="/user/billing" :active="request()->routeIs('profile.billing')">
-    Billing
-</x-responsive-nav-link>
-```
 
 #### Adding the subscriptions and receipts views
 
