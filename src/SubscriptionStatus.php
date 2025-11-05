@@ -11,7 +11,7 @@ class SubscriptionStatus
      */
     public static function for($user)
     {
-        if (! $user->subscribed('default')) {
+        if (! $user->subscribed()) {
             if ($user->onGenericTrial()) {
                 $status = ["on_generic_trial" => $user->trialDaysLeft()];
             } else {
@@ -19,12 +19,12 @@ class SubscriptionStatus
                 $status = ["no_subscription" => ''];
             }
         } else {
-            if ($user->subscription('default')->onGracePeriod()) {
+            if ($user->subscription()->onGracePeriod()) {
                 // Subscription is within its grace period after cancellation.
-                $status = ["cancelled" => $user->subscription('default')->ends_at->format('Y-m-d')];
+                $status = ["cancelled" => $user->subscription()->ends_at->format('Y-m-d')];
             } else {
                 $status = [
-                    "subscribed" => $user->subscription('default')->planNameWithInterval(),
+                    "subscribed" => $user->subscription()->planNameWithInterval(),
                 ];
             }
         }

@@ -64,10 +64,7 @@ return [
         'merchant_id_test' => env('PAYFAST_MERCHANT_ID_TEST'),
         'merchant_key_test' => env('PAYFAST_MERCHANT_KEY_TEST'),
         'passphrase_test' => env('PAYFAST_PASSPHRASE_TEST'),
-        'test_mode_callback_url' => env('PAYFAST_TEST_MODE_CALLBACK_URL', config('app.url')),
-        'test_mode_webhook_url' => env('PAYFAST_TEST_MODE_WEBHOOK_URL', config('app.url')),
-        'callback_url' => env('PAYFAST_CALLBACK_URL', config('app.url')),
-        'webhook_url' => env('PAYFAST_WEBHOOK_URL', config('app.url')),
+        'test_mode_itn_url' => env('PAYFAST_TEST_MODE_ITN_URL'), // Only needed in test mode for ngrok
         'debug' => env('PAYFAST_DEBUG', false),
         'return_url' => env('PAYFAST_RETURN_URL', '/payfast/return'),
         'cancel_url' => env('PAYFAST_CANCEL_URL', '/payfast/cancel'),

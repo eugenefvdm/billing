@@ -20,7 +20,7 @@
 
             @php
                 $user = Auth()->user();
-                $subscription = $user->subscription('default');
+                $subscription = $user->subscription();
                 $hasEftSubscription = $subscription?->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
                 $hasCardSubscription = $subscription?->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Card;
                 $hasReceipts = $user->receipts()->exists();

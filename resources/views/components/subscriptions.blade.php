@@ -11,7 +11,7 @@
         <div class="max-w-xl text-sm text-gray-600 dark:text-gray-400">
 
             <!-- Check if the current logged in user is subscribed to a plan -->
-            @if (!$user->subscribed('default'))
+            @if (!$user->subscribed())
                 {{-- Trial --}}
                 @if ($user->onGenericTrial())
                     <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
@@ -46,7 +46,7 @@
                 @endif
             @else
                 @php
-                    $subscription = $user->subscription('default');
+                    $subscription = $user->subscription();
                     $isEft = $subscription->payment_method === \Eugenefvdm\Billing\Enums\PaymentMethod::Eft;
                     $isCancelled = !is_null($subscription->cancelled_at);
                     $isOnGracePeriod = $isCancelled && $subscription->onGracePeriod();
@@ -94,7 +94,7 @@
         <!-- Subscription Action Buttons -->
         <div class="mt-5">
             @php
-                $subscription = $user->subscription('default');
+                $subscription = $user->subscription();
                 $hasSubscription = $subscription !== null;
                 $isOnGracePeriod = $hasSubscription && !is_null($subscription->cancelled_at) && $subscription->onGracePeriod();
                 $isActiveSubscription = $hasSubscription && !$isOnGracePeriod && !$subscription->ended();

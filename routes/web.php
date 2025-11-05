@@ -5,13 +5,34 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/payfast/return', function() {
-    return redirect()->route('settings.billing')
-        ->with('success', 'Payment completed successfully.');
+    Log::debug("Payfast return route hit");
+    // If we have an invoice UUID in the session, redirect to it
+    $invoiceUuid = session('invoice_uuid');
+    $returnUrl = session('payment_return_url', '/');
+    
+    if ($invoiceUuid) {
+        session()->forget('invoice_uuid');
+        return redirect()->route('invoices.show', $invoiceUuid)
+            ->with('success', 'Payment completed successfully.');
+    }
+    
+    session()->forget('payment_return_url');
+    return redirect($returnUrl)->with('success', 'Payment completed successfully.');
 });
 
 Route::get('/payfast/cancel', function() {
-    return redirect()->route('settings.billing')
-        ->with('info', 'Payment was cancelled.');
+    // If we have an invoice UUID in the session, redirect back to it
+    $invoiceUuid = session('invoice_uuid');
+    $returnUrl = session('payment_return_url', '/');
+    
+    if ($invoiceUuid) {
+        session()->forget('invoice_uuid');
+        return redirect()->route('invoices.show', $invoiceUuid)
+            ->with('info', 'Payment was cancelled.');
+    }
+    
+    session()->forget('payment_return_url');
+    return redirect($returnUrl)->with('info', 'Payment was cancelled.');
 });
 
 Route::post('/payfast/notify', 'Eugenefvdm\Billing\Http\Controllers\WebhookController');
@@ -122,6 +143,12 @@ Route::get('/invoices/{uuid}/pay', function ($uuid) {
         // Generate payment ID (similar to Order::generate() but without requiring auth)
         $paymentId = $invoice->id . '-' . \Carbon\Carbon::now()->format('YmdHis');
         
+        // Store invoice UUID and return URL in session for return/cancel redirects
+        session([
+            'invoice_uuid' => $invoice->uuid,
+            'payment_return_url' => request()->headers->get('referer', '/'),
+        ]);
+        
         // Generate payment form data
         $data = [
             'merchant_id' => $payfast->merchantId(),
@@ -137,35 +164,26 @@ Route::get('/invoices/{uuid}/pay', function ($uuid) {
             // Add invoice identifier for webhook processing
             'custom_str1' => $billable->getMorphClass(),
             'custom_int1' => $billable->getKey(),
-            'custom_str3' => 'invoice:' . $invoice->uuid, // Invoice identifier
+            'custom_str3' => 'invoice:' . $invoice->uuid,
         ];
         
-        // Add return URLs
-        // For traditional payments:
-        // - return/cancel URLs should point to the application (APP_URL)
-        // - notify URL (webhook) should point to the webhook URL (ngrok in test mode)
-        $testMode = config('billing.payfast.test_mode');
+        // Add URLs
+        $baseUrl = config('app.url');
+        $data['return_url'] = $baseUrl . config('billing.payfast.return_url');
+        $data['cancel_url'] = $baseUrl . config('billing.payfast.cancel_url');
         
-        // Return and cancel URLs use the application URL
-        $callbackUrl = $testMode 
-            ? config('billing.payfast.test_mode_callback_url', config('app.url'))
-            : config('billing.payfast.callback_url', config('app.url'));
-        
-        // Notify URL (webhook) uses the webhook URL (ngrok in test mode)
-        $webhookUrl = $testMode
-            ? config('billing.payfast.test_mode_webhook_url', config('app.url'))
-            : config('billing.payfast.webhook_url', config('app.url'));
-        
-        $data['return_url'] = $callbackUrl . config('billing.payfast.return_url');
-        $data['cancel_url'] = $callbackUrl . config('billing.payfast.cancel_url');
-        $data['notify_url'] = $webhookUrl . config('billing.payfast.notify_url');
+        // ITN (webhook) needs ngrok URL in test mode
+        $itnUrl = config('billing.payfast.test_mode') && config('billing.payfast.test_mode_itn_url')
+            ? config('billing.payfast.test_mode_itn_url')
+            : $baseUrl;
+        $data['notify_url'] = $itnUrl . config('billing.payfast.notify_url');
         
         // Generate signature
         $signature = $payfast->generateApiSignature($data, $payfast->passphrase());
         $data['signature'] = $signature;
         
         // Determine Payfast host
-        $pfHost = $testMode ? 'sandbox.payfast.co.za' : 'www.payfast.co.za';
+        $pfHost = config('billing.payfast.test_mode') ? 'sandbox.payfast.co.za' : 'www.payfast.co.za';
         $actionUrl = "https://{$pfHost}/eng/process";
         
         return view('billing::payfast.payment', [

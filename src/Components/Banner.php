@@ -33,7 +33,7 @@ class Banner extends Component
         $message = "";
 
         // <!-- Check if the current logged in user is subscribed to a plan -->
-        if (! $user->subscribed('default')) {
+        if (! $user->subscribed()) {
             // {{-- Trial --}}
             if ($user->onGenericTrial()) {
                 $message = "You are currently on trial till " . $user->trialEndsAt()->format('jS \o\f F Y');
@@ -43,22 +43,22 @@ class Banner extends Component
                 $message = "You are not currently subscribed to a plan.";
             }
         } else {
-            if ($user->subscription('default')->onGracePeriod()) {
+            if ($user->subscription()->onGracePeriod()) {
                 // This block means the user is in the grace period of their subscription
                 if (Carbon::now()->diffInDays(
                     $user->subscriptions()->active()->first()->ends_at->format('Y-m-d'),
                 ) != 0) {
                     $message = "There are "
-                        . (int) Carbon::now()->diffInDays($user->subscription('default')->ends_at)
+                        . (int) Carbon::now()->diffInDays($user->subscription()->ends_at)
                         . " days left of your subscription and the last day is the "
-                        . $user->subscription('default')->ends_at->format('jS \o\f F Y');
+                        . $user->subscription()->ends_at->format('jS \o\f F Y');
                 } else {
                     $message = "Today is the last day of your subscription.";
                 }
             } else {
                 $message = "You are subscribed to "
-                        . config('billing.billables.user.plans')[explode('|', $user->subscription('default')->type)[0]]['name']
-                        . ' ' . ucfirst(explode('|', $user->subscription('default')->type)[1]) . ".";
+                        . config('billing.billables.user.plans')[explode('|', $user->subscription()->type)[0]]['name']
+                        . ' ' . ucfirst(explode('|', $user->subscription()->type)[1]) . ".";
             }
         }
 

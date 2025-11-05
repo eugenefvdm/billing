@@ -193,16 +193,28 @@ class Subscription extends Model
                       ->whereNotNull('ends_at')
                       ->where('ends_at', '>', Carbon::now())
                       ->where(function ($q) {
-                          // Calculate period start by subtracting interval from ends_at
-                          // Parse interval from type field (format: "0|monthly" or "1|yearly")
-                          // Use CASE statement to subtract correct interval
-                          $q->whereRaw('DATE_SUB(ends_at, INTERVAL CASE 
-                              WHEN type LIKE "%|daily%" THEN 1 DAY
-                              WHEN type LIKE "%|weekly%" THEN 1 WEEK
-                              WHEN type LIKE "%|monthly%" THEN 1 MONTH
-                              WHEN type LIKE "%|quarterly%" THEN 3 MONTH
-                              WHEN type LIKE "%|yearly%" THEN 1 YEAR
-                              ELSE 1 MONTH END) <= ?', [Carbon::now()]);
+                          $now = Carbon::now();
+                          // Check each interval type separately (MariaDB-compatible)
+                          $q->where(function ($q) use ($now) {
+                              $q->where('type', 'LIKE', '%|daily%')
+                                ->whereRaw('DATE_SUB(ends_at, INTERVAL 1 DAY) <= ?', [$now]);
+                          })
+                          ->orWhere(function ($q) use ($now) {
+                              $q->where('type', 'LIKE', '%|weekly%')
+                                ->whereRaw('DATE_SUB(ends_at, INTERVAL 1 WEEK) <= ?', [$now]);
+                          })
+                          ->orWhere(function ($q) use ($now) {
+                              $q->where('type', 'LIKE', '%|monthly%')
+                                ->whereRaw('DATE_SUB(ends_at, INTERVAL 1 MONTH) <= ?', [$now]);
+                          })
+                          ->orWhere(function ($q) use ($now) {
+                              $q->where('type', 'LIKE', '%|quarterly%')
+                                ->whereRaw('DATE_SUB(ends_at, INTERVAL 3 MONTH) <= ?', [$now]);
+                          })
+                          ->orWhere(function ($q) use ($now) {
+                              $q->where('type', 'LIKE', '%|yearly%')
+                                ->whereRaw('DATE_SUB(ends_at, INTERVAL 1 YEAR) <= ?', [$now]);
+                          });
                       });
             });
         })->where('status', '!=', self::STATUS_PAUSED);
@@ -651,9 +663,14 @@ class Subscription extends Model
                 ? $this->paused_at
                 : Carbon::now();
         } else {
-            $endsAt = $this->onTrial()
-                ? $this->trial_ends_at
-                : $this->runDate()->date()->subDay(1);
+            if ($this->onTrial()) {
+                $endsAt = $this->trial_ends_at;
+            } elseif ($runDate = $this->runDate()) {
+                $endsAt = $runDate->date()->subDay(1);
+            } else {
+                // Fallback if no run_date available (e.g., EFT subscription or missing Payfast data)
+                $endsAt = $this->next_bill_at ? $this->next_bill_at->subDay(1) : Carbon::now();
+            }
         }
 
         return $this->cancelAt($endsAt);
@@ -677,7 +694,10 @@ class Subscription extends Model
      */
     public function cancelAt(DateTimeInterface $endsAt)
     {
-        Payfast::cancelSubscription($this->provider_id);
+        // Only cancel with Payfast if this is a card subscription with a provider_id
+        if ($this->provider_id && $this->payment_method !== PaymentMethod::Eft) {
+            Payfast::cancelSubscription($this->provider_id);
+        }
 
         $this->forceFill([
             'status' => self::STATUS_CANCELED,

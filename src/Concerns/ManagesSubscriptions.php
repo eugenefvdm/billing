@@ -21,56 +21,57 @@ trait ManagesSubscriptions
         return $this->morphMany(Cashier::$subscriptionModel, 'billable')->orderByDesc('created_at');
     }
 
-    public function subscription($type = 'default')
+    /**
+     * Get the billable's subscription.
+     * 
+     * Note: Unlike Cashier Paddle which supports multiple subscriptions per user,
+     * this package assumes one subscription per user at a time.
+     *
+     * @return \Eugenefvdm\Billing\Subscription|null
+     */
+    public function subscription()
     {
-        return $this->subscriptions->where('type', $type)->first();
+        return $this->subscriptions->sortByDesc('created_at')->first();
     }
 
     /**
      * Determine if the Billable model is on trial.
-     * 
-     * We divert from the Cashier Paddle implementation by
-     * looking for a plan rather than a price.
      *
-     * @param  string  $type
-     * @param  int|null  $plan
      * @return bool
      */
-    public function onTrial($type = 'default', $plan = null)
+    public function onTrial()
     {
-        if (func_num_args() === 0 && $this->onGenericTrial()) {
+        if ($this->onGenericTrial()) {
             return true;
         }
 
-        $subscription = $this->subscription($type);
+        $subscription = $this->subscription();
 
         if (! $subscription || ! $subscription->onTrial()) {
             return false;
         }
 
-        return $plan ? $subscription->hasPlan($plan) : true;
+        return true;
     }
 
     /**
      * Determine if the Billable model's trial has ended.
      *
-     * @param  string  $type
-     * @param  int|null  $plan
      * @return bool
      */
-    public function hasExpiredTrial($type = 'default', $plan = null)
+    public function hasExpiredTrial()
     {
-        if (func_num_args() === 0 && $this->hasExpiredGenericTrial()) {
+        if ($this->hasExpiredGenericTrial()) {
             return true;
         }
 
-        $subscription = $this->subscription($type);
+        $subscription = $this->subscription();
 
         if (! $subscription || ! $subscription->hasExpiredTrial()) {
             return false;
         }
 
-        return $plan ? $subscription->hasPlan($plan) : true;
+        return true;
     }
 
     /**
@@ -104,12 +105,11 @@ trait ManagesSubscriptions
     /**
      * Get the ending date of the trial.
      *
-     * @param string $type
      * @return \Illuminate\Support\Carbon|null
      */
-    public function trialEndsAt(string $type = 'default'): ?\Illuminate\Support\Carbon
+    public function trialEndsAt(): ?\Illuminate\Support\Carbon
     {
-        if ($subscription = $this->subscription($type)) {
+        if ($subscription = $this->subscription()) {
             return $subscription->trial_ends_at;
         }
 
@@ -117,14 +117,13 @@ trait ManagesSubscriptions
     }
 
     /**
-     * Get the ending date of the trial.
+     * Get the trial days remaining.
      *
-     * @param  string  $type
-     * @return \Illuminate\Support\Carbon|null
+     * @return int|null
      */
-    public function trialDaysLeft($type = 'default')
+    public function trialDaysLeft()
     {
-        if ($subscription = $this->subscription($type)) {
+        if ($subscription = $this->subscription()) {
             return - ($subscription->trial_ends_at->diffInDays(Carbon::now(), false));
         }
 
@@ -132,33 +131,30 @@ trait ManagesSubscriptions
     }
 
     /**
-     * Determine if the Billable model has a given subscription.
+     * Determine if the Billable model has an active subscription.
      *
-     * @param string $type
-     * @param int|null $plan
      * @return bool
      */
-    public function subscribed(string $type = 'default', int $plan = null): bool
+    public function subscribed(): bool
     {
-        $subscription = $this->subscription($type);
+        $subscription = $this->subscription();
 
         if (! $subscription || ! $subscription->valid()) {
             return false;
         }
 
-        return $plan ? $subscription->hasPlan($plan) : true;
+        return true;
     }
 
     /**
-     * Determine if the Billable model is actively subscribed to one of the given plans.
+     * Determine if the Billable model is actively subscribed to a given plan interval.
      *
-     * @param string $plan
-     * @param string $type
+     * @param string $plan Plan interval (e.g., 'monthly', 'yearly')
      * @return bool
      */
-    public function subscribedToPlan(string $plan, string $type = 'default'): bool
+    public function subscribedToPlan(string $plan): bool
     {
-        $subscription = $this->subscription($type);
+        $subscription = $this->subscription();
 
         if (! $subscription || ! $subscription->valid()) {
             return false;

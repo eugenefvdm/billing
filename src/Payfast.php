@@ -27,37 +27,32 @@ class Payfast implements BillingProvider
     {
         $this->test_mode = $client['test_mode'] ?? false;
 
-        // TODO There is bad coding with overlap of return URLs and how prepend
-        // is used. This needs to be refactored.
-        $prependCallbackUrl = "";
-        $prependWebhookUrl = "";
-
         if ($this->test_mode) {
             $this->merchant_id = $client['merchant_id_test'];
             $this->merchant_key = $client['merchant_key_test'];
             $this->passphrase = $client['passphrase_test'];
             $this->url = 'https://sandbox.payfast.co.za​/onsite/process';
-            $prependCallbackUrl = config('billing.payfast.test_mode_callback_url', config('app.url'));
-            $prependWebhookUrl = config('billing.payfast.test_mode_webhook_url', config('app.url'));
         } else {
             $this->merchant_id = $client['merchant_id'];
             $this->merchant_key = $client['merchant_key'];
             $this->passphrase = $client['passphrase'];
             $this->url = 'https://www.payfast.co.za/onsite/process';
-            $prependCallbackUrl = config('billing.payfast.callback_url', config('app.url'));
-            $prependWebhookUrl = config('billing.payfast.webhook_url', config('app.url'));
         }
 
         if (config('billing.payfast.debug') == true) {
             //            Log::debug("In Payfast API constructor, test_mode: $this->test_mode, URL: $this->url");
         }
 
-        // Return and cancel URLs use callback URL (APP_URL)
-        $this->returnUrl = $prependCallbackUrl . $client['return_url'];
-        $this->cancelUrl = $prependCallbackUrl . $client['cancel_url'];
+        // Return and cancel URLs use app URL
+        $baseUrl = config('app.url');
+        $this->returnUrl = $baseUrl . $client['return_url'];
+        $this->cancelUrl = $baseUrl . $client['cancel_url'];
         
-        // Notify URL (webhook) uses webhook URL (ngrok in test mode)
-        $this->notifyUrl = $prependWebhookUrl . $client['notify_url'];
+        // ITN (notify URL) uses ngrok URL in test mode for webhooks
+        $itnUrl = $this->test_mode && config('billing.payfast.test_mode_itn_url')
+            ? config('billing.payfast.test_mode_itn_url')
+            : $baseUrl;
+        $this->notifyUrl = $itnUrl . $client['notify_url'];
 
         $this->urlCollection = [
             'return_url' => $this->returnUrl,

@@ -63,7 +63,7 @@ class Subscriptions extends Component
 
     public function cancelSubscription(): void
     {
-        $subscription = $this->user->subscription('default');
+        $subscription = $this->user->subscription();
         
         // Handle EFT subscriptions differently (no Payfast API call needed)
         if ($subscription->payment_method === PaymentMethod::Eft) {
@@ -101,7 +101,7 @@ class Subscriptions extends Component
      */
     public function updateCard()
     {
-        $provider_id = $this->user->subscription('default')->provider_id;
+        $provider_id = $this->user->subscription()->provider_id;
 
         ray("updateCard has been called with this token: $provider_id");
 
@@ -174,7 +174,7 @@ class Subscriptions extends Component
 
         // Handle Card subscription (existing Payfast flow)
         // User's trial has been activated but they have never been a subscriber
-        if ($this->user->onGenericTrial() && ! $this->user->subscribed('default')) {
+        if ($this->user->onGenericTrial() && ! $this->user->subscribed()) {
             $billingDate = $this->user->trialEndsAt()->addDay();
 
             if ($this->type === 'monthly') {
@@ -189,15 +189,15 @@ class Subscriptions extends Component
         }
 
         // User has or has had an active subscription but is still in a trial period
-        if ($this->user->subscribed('default') && $this->user->subscription('default')->onGracePeriod()) {
-            $billingDate = $this->user->subscription('default')->ends_at->addDay()->format('Y-m-d');
+        if ($this->user->subscribed() && $this->user->subscription()->onGracePeriod()) {
+            $billingDate = $this->user->subscription()->ends_at->addDay()->format('Y-m-d');
         }
 
         if (! isset($billingDate)) {
             $billingDate = \Carbon\Carbon::now()->format('Y-m-d');
         }
 
-        if ($this->user->subscribed('default') && $this->user->subscription('default')->onGracePeriod()) {
+        if ($this->user->subscribed() && $this->user->subscription()->onGracePeriod()) {
             $this->mergeFields = array_merge($this->mergeFields, ['amount' => 0]);
         }
 
@@ -251,7 +251,6 @@ class Subscriptions extends Component
         // Only check EFT subscriptions - Payfast subscriptions are handled separately via webhooks
         $existingEftSubscription = $this->user->subscriptions()
             ->where('payment_method', PaymentMethod::Eft)
-            ->where('name', 'default')
             ->first();
             
         if ($existingEftSubscription) {
@@ -288,7 +287,6 @@ class Subscriptions extends Component
 
         // Create EFT subscription
         $subscription = $this->user->subscriptions()->create([
-            'name' => 'default',
             'type' => $this->type, // Store full format "0|monthly" for consistency
             'payment_method' => PaymentMethod::Eft,
             'status' => Subscription::STATUS_ACTIVE,

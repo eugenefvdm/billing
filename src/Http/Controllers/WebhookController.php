@@ -32,7 +32,7 @@ class WebhookController extends Controller
      */
     public function __invoke(Request $request)
     {
-        $message = 'Incoming Webhook from Payfast';
+        $message = 'WebookController: __invoice() Incoming ITN received from Payfast';
         Log::info($message);
         ray($message)->blue();
 
@@ -175,11 +175,11 @@ class WebhookController extends Controller
         $customer = $this->findOrCreateCustomer($payload);
 
         $subscription = $customer->subscriptions()->create([
-            'name' => 'default',
             'provider_id' => $payload['token'],
             'type' => $payload['custom_str2'], // Full plan identifier (e.g., '0|monthly')            
             'status' => $payload['payment_status'],
-            'next_bill_at' => $payload['billing_date'] ?? null, // This happens when subscription was never created but then cancelled
+            'next_bill_at' => $payload['billing_date'] ?? null,
+            'ends_at' => null, // Card subscriptions should have NULL ends_at to be considered active
         ]);
 
         SubscriptionCreated::dispatch($customer, $subscription, $payload);

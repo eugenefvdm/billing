@@ -25,7 +25,7 @@ trait Payfast
     {
         return \Illuminate\Database\Eloquent\Casts\Attribute::make(
             get: function () {
-                if (! $this->subscribed('default')) {
+                if (! $this->subscribed()) {
                     if ($this->onGenericTrial()) {
                         $status = ["on_generic_trial" => $this->trialDaysLeft()];
                     } else {
@@ -33,9 +33,9 @@ trait Payfast
                         $status = ["no_subscription" => ''];
                     }
                 } else {
-                    if ($this->subscription('default')->onGracePeriod()) {
+                    if ($this->subscription()->onGracePeriod()) {
                         // Subscription is within its grace period after cancellation.
-                        $status = ["cancelled" => $this->subscription('default')->ends_at->format('Y-m-d')];
+                        $status = ["cancelled" => $this->subscription()->ends_at->format('Y-m-d')];
                     } else {
                         $status = [
                             "subscribed" => $this->planName(),

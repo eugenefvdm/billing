@@ -22,13 +22,12 @@ test('customers can perform subscription checks', function () {
         'status' => Subscription::STATUS_ACTIVE,
     ]);
 
-    expect($billable->subscribed('0|monthly'))->toBeTrue();
-    expect($billable->subscribed('default'))->toBeFalse();
+    expect($billable->subscribed())->toBeTrue();
     expect($billable->subscribedToPlan('yearly'))->toBeFalse();
-    expect($billable->subscribedToPlan('monthly', '0|monthly'))->toBeTrue();
+    expect($billable->subscribedToPlan('monthly'))->toBeTrue();
     expect($billable->onPlan('monthly'))->toBeTrue();
     expect($billable->onPlan('yearly'))->toBeFalse();
-    expect($billable->onTrial('0|monthly'))->toBeFalse();
+    expect($billable->onTrial())->toBeFalse();
     expect($billable->onGenericTrial())->toBeFalse();
 
     expect($subscription->valid())->toBeTrue();
@@ -46,7 +45,6 @@ test('customers can check if they are on a generic trial', function () {
 
     expect($billable->onGenericTrial())->toBeTrue();
     expect($billable->onTrial())->toBeTrue();
-    expect($billable->onTrial('main'))->toBeFalse();
     expect(Carbon::tomorrow())->toEqual($billable->trialEndsAt());
 });
 
@@ -60,17 +58,14 @@ test('customers can check if their subscription is on trial', function () {
         'trial_ends_at' => Carbon::tomorrow(),
     ]);
 
-    expect($billable->subscribed('0|monthly'))->toBeTrue();
-    expect($billable->subscribed('default'))->toBeFalse();
+    expect($billable->subscribed())->toBeTrue();
     expect($billable->subscribedToPlan('yearly'))->toBeFalse();
-    expect($billable->subscribedToPlan('monthly', '0|monthly'))->toBeTrue();
+    expect($billable->subscribedToPlan('monthly'))->toBeTrue();
     expect($billable->onPlan('monthly'))->toBeTrue();
     expect($billable->onPlan('yearly'))->toBeFalse();
-    expect($billable->onTrial('0|monthly'))->toBeTrue();
-    expect($billable->onTrial('0|monthly', 'monthly'))->toBeTrue();
-    expect($billable->onTrial('0|monthly', 'yearly'))->toBeFalse();
+    expect($billable->onTrial())->toBeTrue();
     expect($billable->onGenericTrial())->toBeFalse();
-    expect(Carbon::tomorrow())->toEqual($billable->trialEndsAt('0|monthly'));
+    expect(Carbon::tomorrow())->toEqual($billable->trialEndsAt());
 
     expect($subscription->valid())->toBeTrue();
     expect($subscription->active())->toBeTrue();
