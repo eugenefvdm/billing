@@ -32,9 +32,7 @@ class Subscriptions extends Component
 
     public $dismissedOutstandingInvoice = false;
 
-    public $dismissedPaymentMethodError = false;
-
-    private $password;
+    public $dismissedPaymentMethodError = false;    
 
     protected $listeners = [
         'billingUpdated' => 'billingWasUpdated',

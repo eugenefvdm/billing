@@ -30,7 +30,7 @@
                     )
                     ->exists();
                 $showInvoices = $hasEftSubscription || $hasEftInvoices;
-                $showReceipts = !$hasEftSubscription && ($hasReceipts || $hasCardSubscription);
+                $showReceipts = $hasReceipts;
             @endphp
 
             @if($showInvoices)
